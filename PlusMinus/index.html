@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>MarcLab → PlusMinus (v2.8.0 Super Kid)</title>
-  <meta name="description" content="MarcLab PlusMinus v2.8.0 Super Kid: super-kid mode, voice-like prompts (no TTS), level map with medals, full-game mobile drawer, adaptive keypad, math autoscale, stable patches 1–5." />
+  <title>MarcLab → PlusMinus (v2.8.1 Super Kid MobileFit)</title>
+  <meta name="description" content="MarcLab PlusMinus v2.8.1 Super Kid: MobileFit via visualViewport height, grid topbar on mobile, height-aware autoscale, adaptive keypad, prompts + level map + medals." />
   <style>
     :root{
       --bg:#0f172a; --card:#1e293b; --line:rgba(255,255,255,.1);
@@ -13,6 +13,9 @@
       --gold:#facc15; --good:#4ade80; --bad:#fb7185; --warn:#fbbf24;
       --shadow:0 12px 30px rgba(0,0,0,.5); --radius:22px;
       --font:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+
+      /* ✅ MobileFit: set by JS using visualViewport */
+      --vvh: 100svh;
 
       /* Math auto-scale (set by JS) */
       --S: 1;
@@ -26,21 +29,23 @@
       --pillPadY: clamp(9px, calc(10px * var(--S)), 12px);
       --pillPadX: clamp(12px, calc(14px * var(--S)), 18px);
 
-      --eqFs: clamp(40px, calc(54px * var(--S)), 72px);
-      --eqBoxW: clamp(92px, calc(110px * var(--S)), 140px);
-      --eqBoxH: clamp(70px, calc(86px * var(--S)), 104px);
+      --eqFs: clamp(38px, calc(54px * var(--S)), 72px);
+      --eqBoxW: clamp(90px, calc(110px * var(--S)), 140px);
+      --eqBoxH: clamp(66px, calc(86px * var(--S)), 104px);
 
-      --btnFs: clamp(20px, calc(28px * var(--S)), 36px);
-      --btnPad: clamp(14px, calc(18px * var(--S)), 24px);
+      --btnFs: clamp(18px, calc(28px * var(--S)), 36px);
+      --btnPad: clamp(12px, calc(18px * var(--S)), 24px);
       --btnRadius: clamp(14px, calc(16px * var(--S)), 18px);
 
       --kbdGap: clamp(8px, calc(10px * var(--S)), 12px);
 
-      /* Super-kid rounding defaults (overridden by .kid) */
+      /* Super-kid rounding defaults */
       --round: 18px;
     }
 
     *{ box-sizing:border-box; user-select:none; -webkit-tap-highlight-color:transparent; }
+
+    html, body { height:100%; }
 
     body{
       margin:0; font-family:var(--font);
@@ -49,17 +54,21 @@
         radial-gradient(circle at 85% 80%, rgba(56,189,248,.1) 0%, transparent 40%),
         var(--bg);
       color:var(--text);
-      min-height:100dvh;
+
+      /* ✅ use real visible viewport height */
+      height: var(--vvh);
+      overflow:hidden;
+
       display:flex; align-items:stretch; justify-content:center;
+
       padding:
         calc(var(--pad) + env(safe-area-inset-top))
         calc(var(--pad) + env(safe-area-inset-right))
         calc(var(--pad) + env(safe-area-inset-bottom))
         calc(var(--pad) + env(safe-area-inset-left));
-      overflow:hidden;
     }
 
-    /* ✅ SUPER KID MODE (body.kid) */
+    /* ✅ SUPER KID MODE */
     body.kid{
       background:
         radial-gradient(circle at 20% 12%, rgba(250,204,21,.14) 0%, transparent 45%),
@@ -78,15 +87,45 @@
       min-height:0;
     }
 
-    /* TOP BAR */
+    /* ✅ TOP BAR: grid (prevents overlap on wrap) */
     .top{
-      display:flex; gap:12px; flex-wrap:wrap; align-items:center; justify-content:space-between;
+      display:grid;
+      grid-template-columns: 1fr auto;
+      grid-template-areas:
+        "brand stats"
+        "controls stats";
+      gap:10px 12px;
+      align-items:center;
+
       background:rgba(30,41,59,.62);
       backdrop-filter:blur(10px);
       padding:12px 16px;
       border-radius:var(--radius);
       border:1px solid var(--line);
     }
+    .brand{ grid-area:brand; min-width:0; }
+    .controls{ grid-area:controls; min-width:0; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .stats{
+      grid-area:stats;
+      min-width:0;
+      display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+      justify-content:flex-end;
+      justify-self:end;
+      align-self:stretch;
+      align-content:center;
+    }
+
+    @media(max-width:900px){
+      .top{
+        grid-template-columns: 1fr;
+        grid-template-areas:
+          "brand"
+          "controls"
+          "stats";
+      }
+      .stats{ justify-content:flex-start; justify-self:start; }
+    }
+
     body.kid .top{
       background:rgba(30,41,59,.72);
       border-color:rgba(255,255,255,.13);
@@ -99,10 +138,11 @@
       display:flex;
       align-items:center;
       gap:8px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
     .brand span{font-size:12px; color:var(--muted); display:block;}
-
-    .controls{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
 
     .pill-btn{
       background:rgba(255,255,255,.05);
@@ -118,17 +158,10 @@
       transition:transform .08s ease;
     }
     .pill-btn:active{ transform:scale(.98); }
-
     .pill-btn.active{ background:var(--accent); color:#0f172a; border-color:var(--accent); }
     .pill-btn.primary{ background:rgba(250,204,21,.12); border-color:rgba(250,204,21,.35); color:var(--gold); }
     .pill-btn.kidToggle{ background:rgba(124,58,237,.14); border-color:rgba(124,58,237,.35); color:#ddd6fe; }
 
-    body.kid .pill-btn{
-      border-radius:999px;
-      background:rgba(255,255,255,.07);
-    }
-
-    .stats{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
     .stat{
       padding:6px 12px;
       background:rgba(0,0,0,.3);
@@ -139,6 +172,7 @@
       display:flex;
       gap:6px;
       align-items:center;
+      white-space:nowrap;
     }
     .stat.gold{ color:var(--gold); border-color:rgba(250,204,21,.2); }
 
@@ -147,7 +181,9 @@
       flex:1; min-height:0;
       display:grid;
       grid-template-columns:1.25fr .75fr;
+      grid-template-rows: 1fr; /* ✅ ensure row stretches to available height */
       gap:var(--gap);
+      align-items:stretch;
     }
     @media(max-width: 900px){
       .main{ grid-template-columns:1fr; }
@@ -159,7 +195,7 @@
       border:1px solid var(--line);
       border-radius:var(--radius);
       box-shadow:var(--shadow);
-      padding:clamp(16px, 2.4vw, 20px);
+      padding:clamp(14px, 2.2vw, 20px);
       position:relative;
       overflow:hidden;
       min-height:0;
@@ -169,14 +205,13 @@
       box-shadow: 0 16px 50px rgba(0,0,0,.55);
     }
 
-    /* GAME CARD */
+    /* ✅ GAME CARD: grid to avoid vertical squeeze causing hidden keypad rows */
     .prompt{
-      display:flex;
-      flex-direction:column;
-      gap:clamp(10px, 1.5vw, 16px);
       height:100%;
       min-height:0;
-      justify-content:space-between;
+      display:grid;
+      grid-template-rows:auto 1fr auto;
+      gap:clamp(8px, 1.2vw, 14px);
     }
 
     .problem-header{
@@ -192,7 +227,6 @@
       color:var(--muted);
       letter-spacing:1px;
     }
-
     .btn-ghost{
       background:transparent;
       border:none;
@@ -223,27 +257,26 @@
     body.kid .bubble{
       background:linear-gradient(180deg, rgba(56,189,248,.14), rgba(0,0,0,.20));
       border-color:rgba(56,189,248,.25);
-      border-radius:999px;
     }
     .bubble small{ color:var(--muted); font-weight:900; }
 
     .problem-body{
-      flex:1; min-height:0;
+      min-height:0;
       display:flex;
       flex-direction:column;
       align-items:center;
       justify-content:center;
-      gap:12px;
-      padding:6px 0;
+      gap:10px;
+      padding:4px 0;
     }
 
     /* Visuals */
     .viz-area{
       display:flex;
       justify-content:center;
-      gap:18px;
-      margin-bottom:6px;
-      min-height:50px;
+      gap:16px;
+      margin-bottom:4px;
+      min-height:44px;
       flex-wrap:wrap;
     }
     .ten-frame{
@@ -273,7 +306,7 @@
       display:flex;
       gap:6px;
       flex-wrap:wrap;
-      max-width:96px;
+      max-width:92px;
       justify-content:center;
       align-content:center;
     }
@@ -323,10 +356,13 @@
       width:100%;
       max-width:520px;
       margin:0 auto;
+
       display:grid;
       grid-template-columns:repeat(3,1fr);
       gap:var(--kbdGap);
-      padding-bottom:4px;
+
+      /* ✅ extra bottom padding so last row never sits on browser UI */
+      padding-bottom: max(8px, env(safe-area-inset-bottom));
     }
     .kbd.wide{ grid-template-columns:repeat(5,1fr); max-width:760px; }
     .kbd.cmp{ grid-template-columns:repeat(3,1fr) !important; max-width:460px; }
@@ -631,22 +667,22 @@
     @keyframes slideIn{ from{transform:translateX(22px); opacity:0;} to{transform:translateX(0); opacity:1;} }
     @keyframes bubbleIn{ from{transform:scale(.96); opacity:.0;} to{transform:scale(1); opacity:1;} }
 
-    @media(max-width:520px){
+    /* ✅ extra compact when height is tight */
+    @media(max-height: 760px){
       .top{ padding:10px 12px; }
-      .brand b{ font-size:16px; }
-      .brand span{ font-size:11px; }
-      .stat{ font-size:12px; }
-      .dot-group{ max-width:82px; }
+      .card{ padding:14px; }
+      .viz-area{ min-height:38px; margin-bottom:2px; }
+      .bubble{ padding:8px 14px; }
     }
   </style>
 </head>
 
 <body>
   <div class="app">
-    <div class="top">
+    <div class="top" id="topBar">
       <div class="brand">
         <b>🧠 MarcLab → PlusMinus</b>
-        <span>v2.8.0 Super Kid • prompts + level map + medals 🏅</span>
+        <span>v2.8.1 Super Kid • MobileFit (no cut keypad)</span>
       </div>
 
       <div class="controls">
@@ -672,9 +708,7 @@
           <button class="btn-ghost" onclick="app.makeEasier()">Prea greu? 🧸</button>
         </div>
 
-        <div class="problem-body" id="uiProblem">
-          <!-- bubble + problem injected here -->
-        </div>
+        <div class="problem-body" id="uiProblem"></div>
 
         <div class="kbd" id="kbd"></div>
 
@@ -687,7 +721,6 @@
         </div>
       </div>
 
-      <!-- Desktop side panel -->
       <div class="side">
         <div class="card">
           <div class="h-text" style="margin-bottom:12px">Abilități (Adaptiv)</div>
@@ -702,7 +735,6 @@
     </div>
   </div>
 
-  <!-- Drawer -->
   <div class="drawer" id="drawer" aria-hidden="true">
     <div class="backdrop" onclick="app.toggleDrawer(false)"></div>
 
@@ -718,7 +750,6 @@
         <button class="tabBtn" id="tabParent" onclick="app.setDrawerTab('parent')">Părinte 🔒</button>
       </div>
 
-      <!-- PROGRESS -->
       <div class="drawerCard" id="drawerProgress">
         <div class="h-text" style="margin-bottom:10px">Statistici</div>
         <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
@@ -732,7 +763,6 @@
         <div id="uiSkillsDrawer"></div>
       </div>
 
-      <!-- MAP -->
       <div class="drawerCard" id="drawerMap" style="display:none;">
         <div class="h-text" style="margin-bottom:10px">Harta nivelului (apasă o abilitate)</div>
         <div class="mapGrid" id="uiMap"></div>
@@ -741,7 +771,6 @@
         </div>
       </div>
 
-      <!-- PARENT -->
       <div class="drawerCard" id="drawerParent" style="display:none;">
         <div class="h-text" style="margin-bottom:12px">Control Părinte</div>
         <button class="btn small primary" style="width:100%" onclick="app.parentGate()">Dashboard 🔒</button>
@@ -782,22 +811,6 @@
   </dialog>
 
 <script>
-/**
- * MarcLab → PlusMinus v2.8.0 Super Kid
- * ✅ Patches 1–5 retained:
- *  1) user-select for input/textarea
- *  2) robust safeOpenDialog
- *  3) safe save (storage blocked)
- *  4) iOS AudioContext resume
- *  5) makeEasier guard if current null
- *
- * ✅ New:
- *  - Super Kid mode (rounded, bouncy, brighter) persisted in settings
- *  - Voice-like prompts (no TTS) in a speech bubble
- *  - Level map with medals 🥉🥈🥇 and "Focus" practice from map
- *  - Medal upgrade toast when crossing thresholds
- */
-
 /* Recovery guards (anti-loop) */
 (function setupRecoveryGuards(){
   function recover(reason){
@@ -888,7 +901,6 @@ const SEC = {
 const Confetti = (() => {
   let raf = 0;
   let parts = [];
-  let start = 0;
 
   function burst(){
     const c = document.getElementById("confetti");
@@ -905,7 +917,6 @@ const Confetti = (() => {
     const w = rect.width, h = rect.height;
     const n = Math.round(70 + 40 * Math.random());
     parts = [];
-    start = performance.now();
 
     for (let i=0;i<n;i++){
       const x = w * 0.5 + (Math.random()-0.5) * 60;
@@ -968,18 +979,14 @@ const app = (() => {
     wideKeypad: false,
     drawerOpen: false,
     drawerTab: "progress",
-    focusSkill: null,     // selected from map (session only)
+    focusSkill: null,
     focusLeft: 0
   };
 
   function defaultState(){
     return {
-      meta: { ver: 2.80, app: "PlusMinus" },
-      settings: {
-        level: 1,
-        sound: true,
-        kidMode: true   // default ON for v2.8
-      },
+      meta: { ver: 2.81, app: "PlusMinus" },
+      settings: { level: 1, sound: true, kidMode: true },
       security: { salt: "", hash: "" },
       economy: { xp: 0, coins: 0, streak: 0, level: 1 },
       skills: {
@@ -1046,7 +1053,7 @@ const app = (() => {
 
   function writeLegacySummary(){
     const summary = {
-      meta: { brand:"MarcLab", module:"PlusMinus", version:"2.8.0", updatedAt: Date.now() },
+      meta: { brand:"MarcLab", module:"PlusMinus", version:"2.8.1", updatedAt: Date.now() },
       economy: { xp: state.economy.xp, coins: state.economy.coins, streak: state.economy.streak, level: state.economy.level },
       skills: {
         add: { name:"Adunări", level:1, mastery: state.skills.add1?.m || 0 },
@@ -1095,9 +1102,9 @@ const app = (() => {
   }
 
   function getMedalTier(m){
-    if (m >= 0.90) return 3;     // gold
-    if (m >= 0.75) return 2;     // silver
-    if (m >= 0.55) return 1;     // bronze
+    if (m >= 0.90) return 3;
+    if (m >= 0.75) return 2;
+    if (m >= 0.55) return 1;
     return 0;
   }
   function medalIcon(m){
@@ -1116,7 +1123,6 @@ const app = (() => {
   }
 
   function pickSkill(){
-    // Focus mode from map
     if (ui.focusSkill && ui.focusLeft > 0 && state.skills[ui.focusSkill]){
       ui.focusLeft--;
       if (ui.focusLeft <= 0){
@@ -1149,21 +1155,18 @@ const app = (() => {
       p.ans = n; p.viz = "dots_only"; p.a = n; p.txt = "Numără";
       return p;
     }
-
     if (skKey === "mk10") {
       const a = rand(1,9);
       p.a = a; p.b = 10; p.ans = 10 - a; p.op = "+"; p.viz = "tenframe"; p.mode = "missing";
       p.txt = "Până la 10";
       return p;
     }
-
     if (skKey === "cmp1") {
       const a = rand(1,10), b = rand(1,10);
       p.a = a; p.b = b; p.ans = (a===b ? "=" : (a>b ? ">" : "<")); p.type = "cmp";
       p.txt = "Compară";
       return p;
     }
-
     if (skKey === "cmp2") {
       const a = rand(10,20), b = rand(10,20);
       if (a === b) return genProblem();
@@ -1171,72 +1174,44 @@ const app = (() => {
       p.txt = "Compară (10–20)";
       return p;
     }
-
     if (skKey === "add1") {
       const a = rand(1,8), b = rand(1, 9-a);
       p.a = a; p.b = b; p.op = "+"; p.ans = a+b; p.viz = "dots_help";
       p.txt = "Adunări";
       return p;
     }
-
     if (skKey === "sub1") {
       const a = rand(2,9), b = rand(1,a);
       p.a = a; p.b = b; p.op = "−"; p.ans = a-b; p.viz = "dots_help";
       p.txt = "Scăderi";
       return p;
     }
-
     if (skKey === "add2") {
       const a = rand(6,9), b = rand(11-a, 9);
       p.a = a; p.b = b; p.op = "+"; p.ans = a+b;
       p.txt = "Adunări (10–20)";
       return p;
     }
-
     if (skKey === "sub2") {
       const a = rand(11,18), b = rand(a-9, 9);
       p.a = a; p.b = b; p.op = "−"; p.ans = a-b;
       p.txt = "Scăderi (10–20)";
       return p;
     }
-
     return { skill:"add1", type:"numpad", viz:"dots_help", txt:"Adunări", a:1, b:1, op:"+", ans:2 };
   }
 
-  /* Voice-like prompt bubble (no TTS) */
   function promptLine(p){
     const kid = state.settings.kidMode === true;
     const skill = p.skill;
-
     const pick = (arr) => arr[Math.floor(Math.random()*arr.length)];
     const tails = kid ? ["🙂", "😄", "✨", "🧠", "🏅"] : [""];
 
-    const add = [
-      "Hai să adunăm! Pune răspunsul jos.",
-      "Super! Cât fac împreună?",
-      "Gata de calcul? Scrie rezultatul!",
-      "Adunăm rapid și frumos."
-    ];
-    const sub = [
-      "Scădem! Câte rămân?",
-      "Ia una câte una… cât rămâne?",
-      "Perfect. Fă scăderea și scrie răspunsul."
-    ];
-    const mk10 = [
-      "Completează până la 10.",
-      "Câte îi mai trebuie ca să fie 10?",
-      "Mai lipsește puțin… cât?"
-    ];
-    const cnt = [
-      "Numără atent punctele.",
-      "Numără și spune-mi câte sunt!",
-      "Cu răbdare… câte puncte vezi?"
-    ];
-    const cmp = [
-      "Alege semnul corect: < = >",
-      "Care e mai mare? Alege semnul!",
-      "Compară cele două numere."
-    ];
+    const add = ["Hai să adunăm! Pune răspunsul jos.","Super! Cât fac împreună?","Gata de calcul? Scrie rezultatul!","Adunăm rapid și frumos."];
+    const sub = ["Scădem! Câte rămân?","Ia una câte una… cât rămâne?","Perfect. Fă scăderea și scrie răspunsul."];
+    const mk10 = ["Completează până la 10.","Câte îi mai trebuie ca să fie 10?","Mai lipsește puțin… cât?"];
+    const cnt = ["Numără atent punctele.","Numără și spune-mi câte sunt!","Cu răbdare… câte puncte vezi?"];
+    const cmp = ["Alege semnul corect: < = >","Care e mai mare? Alege semnul!","Compară cele două numere."];
 
     let base = "Hai!";
     if (skill.startsWith("add")) base = pick(add);
@@ -1249,13 +1224,7 @@ const app = (() => {
     return kid ? `${base} ${tail}` : base;
   }
 
-  function newRound(){
-    locked = false;
-    inputBuf = "";
-    hideFeedback();
-    current = genProblem();
-    renderProblem();
-  }
+  function hideFeedback(){ document.getElementById("uiFeedback").classList.remove("show"); }
 
   function showFeedback(ok){
     const fb = document.getElementById("uiFeedback");
@@ -1280,7 +1249,6 @@ const app = (() => {
       icon.textContent = "🔁";
       title.textContent = "Încă o dată!";
       title.style.color = "var(--warn)";
-      // kid: shorter + friendly
       const kid = state.settings.kidMode === true;
       sub.textContent = kid ? `Răspuns: ${current.ans}` : `Răspunsul era: ${current.ans}`;
       btn.textContent = "Am înțeles";
@@ -1288,76 +1256,6 @@ const app = (() => {
       btn.style.color = "#422006";
       btn.style.boxShadow = "0 0 22px rgba(251,191,36,.28)";
     }
-  }
-
-  function hideFeedback(){
-    document.getElementById("uiFeedback").classList.remove("show");
-  }
-
-  function check(val){
-    if (locked || val === "") return;
-    locked = true;
-
-    const correct = (current.type === "cmp")
-      ? String(val) === String(current.ans)
-      : Number(val) === Number(current.ans);
-
-    const sk = state.skills[current.skill] || state.skills.add1;
-    const prevM = sk.m;
-    const prevTier = getMedalTier(prevM);
-
-    if (correct) {
-      SFX.correct();
-      vibe(18);
-      state.economy.xp += 10;
-      state.economy.streak += 1;
-      sk.m = Math.min(0.99, sk.m + 0.05);
-
-      if (state.economy.streak % 5 === 0) {
-        state.economy.coins += 5;
-        toast("Bonus! +5 🪙");
-        vibe(25);
-      }
-    } else {
-      SFX.wrong();
-      vibe(40);
-      state.economy.streak = 0;
-      sk.m = Math.max(0.05, sk.m - 0.04);
-
-      const box = document.getElementById("ansBox");
-      if (box){
-        box.classList.remove("shake");
-        void box.offsetWidth;
-        box.classList.add("shake");
-      }
-    }
-
-    // medal upgrade check
-    const newTier = getMedalTier(sk.m);
-    if (correct && newTier > prevTier) {
-      const icon = medalIcon(sk.m);
-      toast(`Medalie nouă! ${icon}`);
-      // extra tiny confetti burst already happens on correct feedback (good enough)
-    }
-
-    state.skills[current.skill] = sk;
-    save();
-    renderStats(); // includes map refresh
-    showFeedback(correct);
-  }
-
-  function makeEasier(){
-    /* PATCH #5 */
-    if (!current) { toast("Începem imediat 🙂"); return; }
-    const sk = state.skills[current.skill];
-    if (sk) {
-      sk.m = Math.max(0.05, sk.m - 0.10);
-      state.skills[current.skill] = sk;
-      save();
-      renderStats();
-    }
-    toast("Mai ușor 🧸");
-    newRound();
   }
 
   function getDots(n){
@@ -1375,11 +1273,9 @@ const app = (() => {
   function renderProblem(){
     const p = current;
     document.getElementById("uiSkillName").textContent = p.txt || "Exercițiu";
-
     const body = document.getElementById("uiProblem");
     let h = "";
 
-    // voice-like bubble
     const line = promptLine(p);
     const focusHint = (ui.focusSkill && ui.focusLeft > 0)
       ? `<small>🎯 Focus: ${state.skills[ui.focusSkill]?.n || ui.focusSkill} (${ui.focusLeft} rămase)</small>`
@@ -1394,7 +1290,7 @@ const app = (() => {
     } else if (p.viz === "dots_help") {
       h += `<div class="viz-area">
               <div class="dot-group">${getDots(p.a)}</div>
-              <div style="width:18px"></div>
+              <div style="width:16px"></div>
               <div class="dot-group">${getDots(p.b)}</div>
             </div>`;
     }
@@ -1477,7 +1373,6 @@ const app = (() => {
       return;
     }
 
-    // Wide keypad: 5 columns
     const row1 = [1,2,3,4,5];
     const row2 = [6,7,8,9,0];
     row1.concat(row2).forEach(n=>{
@@ -1559,7 +1454,6 @@ const app = (() => {
         toggleDrawer(false);
       };
       btnPlay.onclick = () => {
-        // one immediate round biased to this skill
         ui.focusSkill = k;
         ui.focusLeft = 1;
         toast(`Joacă: ${sk.n} ▶️`);
@@ -1600,13 +1494,26 @@ const app = (() => {
     renderMap();
   }
 
-  function updateResponsive(){
-    const w = window.innerWidth || 0;
-    const h = window.innerHeight || 0;
-    const base = Math.min(w, h);
+  /* ✅ MobileFit: compute height from visualViewport and set --vvh */
+  let raf = 0;
+  function scheduleUpdate(){
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(updateResponsive);
+  }
 
-    let s = base / 780;
-    s = Math.max(0.88, Math.min(1.25, s));
+  function updateResponsive(){
+    const vv = window.visualViewport;
+    const w = vv ? vv.width : window.innerWidth;
+    const h = vv ? vv.height : window.innerHeight;
+
+    // set real visible height (px)
+    document.documentElement.style.setProperty("--vvh", Math.round(h) + "px");
+
+    // ✅ height-aware autoscale
+    const sW = w / 860;
+    const sH = h / 920;
+    let s = Math.min(sW, sH);
+    s = Math.max(0.82, Math.min(1.25, s));
     document.documentElement.style.setProperty("--S", s.toFixed(3));
 
     ui.wideKeypad = (w >= 740) || (w > h && w >= 680);
@@ -1615,8 +1522,13 @@ const app = (() => {
 
   async function init(){
     updateResponsive();
-    window.addEventListener("resize", updateResponsive, { passive:true });
-    window.addEventListener("orientationchange", () => setTimeout(updateResponsive, 80), { passive:true });
+
+    window.addEventListener("resize", scheduleUpdate, { passive:true });
+    window.addEventListener("orientationchange", () => setTimeout(scheduleUpdate, 80), { passive:true });
+    if (window.visualViewport){
+      window.visualViewport.addEventListener("resize", scheduleUpdate, { passive:true });
+      window.visualViewport.addEventListener("scroll", scheduleUpdate, { passive:true });
+    }
 
     const { raw, from } = loadRaw();
     if (raw) {
@@ -1639,6 +1551,74 @@ const app = (() => {
     applySoundSetting();
     applyKidMode();
     renderStats();
+    newRound();
+  }
+
+  function newRound(){
+    locked = false;
+    inputBuf = "";
+    hideFeedback();
+    current = genProblem();
+    renderProblem();
+  }
+
+  function check(val){
+    if (locked || val === "") return;
+    locked = true;
+
+    const correct = (current.type === "cmp")
+      ? String(val) === String(current.ans)
+      : Number(val) === Number(current.ans);
+
+    const sk = state.skills[current.skill] || state.skills.add1;
+    const prevTier = getMedalTier(sk.m);
+
+    if (correct) {
+      SFX.correct();
+      vibe(18);
+      state.economy.xp += 10;
+      state.economy.streak += 1;
+      sk.m = Math.min(0.99, sk.m + 0.05);
+
+      if (state.economy.streak % 5 === 0) {
+        state.economy.coins += 5;
+        toast("Bonus! +5 🪙");
+        vibe(25);
+      }
+    } else {
+      SFX.wrong();
+      vibe(40);
+      state.economy.streak = 0;
+      sk.m = Math.max(0.05, sk.m - 0.04);
+
+      const box = document.getElementById("ansBox");
+      if (box){
+        box.classList.remove("shake");
+        void box.offsetWidth;
+        box.classList.add("shake");
+      }
+    }
+
+    const newTier = getMedalTier(sk.m);
+    if (correct && newTier > prevTier) toast(`Medalie nouă! ${medalIcon(sk.m)}`);
+
+    state.skills[current.skill] = sk;
+    save();
+    renderStats();
+    showFeedback(correct);
+  }
+
+  function makeEasier(){
+    /* PATCH #5 */
+    if (!current) { toast("Începem imediat 🙂"); return; }
+    const sk = state.skills[current.skill];
+    if (sk) {
+      sk.m = Math.max(0.05, sk.m - 0.10);
+      state.skills[current.skill] = sk;
+      save();
+      renderStats();
+    }
+    toast("Mai ușor 🧸");
     newRound();
   }
 
@@ -1729,7 +1709,6 @@ const app = (() => {
 
   function setLevel(l){
     state.settings.level = (l === 2) ? 2 : 1;
-    // reset focus when changing level
     ui.focusSkill = null; ui.focusLeft = 0;
     save();
     renderStats();
@@ -1761,18 +1740,7 @@ const app = (() => {
     drawer.classList.toggle("show", open);
     drawer.setAttribute("aria-hidden", open ? "false" : "true");
 
-    if (open){
-      renderStats();
-      const onKey = (e) => {
-        if (e.key === "Escape") {
-          ui.drawerOpen = false;
-          drawer.classList.remove("show");
-          drawer.setAttribute("aria-hidden","true");
-          window.removeEventListener("keydown", onKey);
-        }
-      };
-      window.addEventListener("keydown", onKey);
-    }
+    if (open) renderStats();
   }
 
   function setDrawerTab(tab){
