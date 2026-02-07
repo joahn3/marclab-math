@@ -88,6 +88,8 @@
       cursor:pointer;
       user-select:none;
       touch-action: manipulation;
+      text-decoration:none;
+      display:inline-flex; align-items:center; justify-content:center;
     }
     .btn.primary{background: rgba(96,165,250,.18); border-color: rgba(96,165,250,.35)}
     .btn.warn{background: rgba(251,191,36,.14); border-color: rgba(251,191,36,.35)}
@@ -155,21 +157,20 @@
   <div class="app">
     <header>
       <div class="brand">
-        <b>MarcLab • Platformă</b>
-        <span>Mini-jocuri educaționale • progres local • offline • export</span>
+        <b>🧠 MarcLab • Platformă</b>
+        <span>Jocuri educaționale • offline • local first</span>
       </div>
       <div class="pill"><small>URL</small> marclab.netlify.app</div>
     </header>
 
     <div class="grid">
-      <!-- Module card: PlusMinus -->
       <section class="card" id="cardPlusMinus">
         <div class="titleRow">
           <div>
             <h2>PlusMinus</h2>
-            <div class="desc">Adunări & scăderi, numărat, comparat și “până la 10”. Adaptiv + gamificare.</div>
+            <div class="desc">Adunări & scăderi, numărat, comparat. Adaptiv + gamificare "Super Kid".</div>
           </div>
-          <div class="tag">Level 1: 1–10</div>
+          <div class="tag">v3.0</div>
         </div>
 
         <div class="metaRow">
@@ -182,7 +183,7 @@
         <div class="desc" id="pmStatus">Progres: (încă nu există) — apasă Start 😊</div>
 
         <div class="btnRow">
-          <a class="btn primary" href="/plusminus/" aria-label="Start PlusMinus">Start</a>
+          <a class="btn primary" href="/plusminus/">▶️ Start</a>
           <button class="btn" id="btnPmProgress">Progres</button>
           <button class="btn" id="btnPmExport">Export</button>
         </div>
@@ -190,16 +191,15 @@
         <div class="hint">Progres/Export sunt protejate cu PIN părinte.</div>
       </section>
 
-      <!-- Placeholder for future modules -->
       <section class="card">
         <div class="titleRow">
           <div>
-            <h2>Următorul modul</h2>
-            <div class="desc">Spațiu rezervat pentru viitor: Litere, logică, pattern-uri, etc.</div>
+            <h2>Viitorul Modul</h2>
+            <div class="desc">Spațiu rezervat: Litere, Logică sau Modelare.</div>
           </div>
           <div class="tag" style="border-color:rgba(255,255,255,.22);background:rgba(255,255,255,.06)">Soon</div>
         </div>
-        <div class="desc">Când adăugăm un modul nou, îl legăm aici și îi dăm cheie de storage separată.</div>
+        <div class="desc">Arhitectura modulară permite adăugarea de jocuri noi fără a afecta progresul existent.</div>
         <div class="btnRow">
           <button class="btn ghost" disabled>—</button>
         </div>
@@ -207,7 +207,6 @@
     </div>
   </div>
 
-  <!-- PIN gate -->
   <dialog id="pinDlg">
     <div class="modal">
       <div class="row">
@@ -235,17 +234,16 @@
         <button class="btn primary" id="pinOk">OK</button>
       </div>
 
-      <div class="hint">PIN implicit: 2580 (îl poți schimba din Dashboard-ul modulului).</div>
+      <div class="hint">PIN implicit: 2580 (se poate schimba din joc).</div>
     </div>
   </dialog>
 
-  <!-- Progress modal -->
   <dialog id="progressDlg">
     <div class="modal">
       <div class="row">
         <div>
           <h3>Progres • PlusMinus</h3>
-          <p>Rezumat + mastery pe abilități.</p>
+          <p>Rezumat abilități</p>
         </div>
         <button class="btn" id="btnCloseProgress">Închide</button>
       </div>
@@ -270,11 +268,12 @@
 
 <script>
 (() => {
-  // Module config
+  // CONFIGURARE MODUL
   const PLUSMINUS = {
     name: "PlusMinus",
     path: "/plusminus/",
-    storageKey: "marclab-plusminus-l1-v1",
+    // ✅ CHEIA TREBUIE SA FIE IDENTICA CU CEA DIN JOC (v3.0)
+    storageKey: "marclab-plusminus-v2-6", 
     defaultPin: "2580"
   };
 
@@ -333,13 +332,13 @@
     const blob = new Blob([JSON.stringify(state, null, 2)], {type:"application/json"});
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `marclab-plusminus-l1-progress-${new Date().toISOString().slice(0,10)}.json`;
+    a.download = `marclab-plusminus-progress-${new Date().toISOString().slice(0,10)}.json`;
     a.click();
     URL.revokeObjectURL(a.href);
     toast("Export gata ✅");
   }
 
-  // --- PIN verify (same mechanism as module) ---
+  // --- PIN verify (Unified with Game v3.0) ---
   function genSalt(){
     const a = new Uint8Array(16);
     crypto.getRandomValues(a);
@@ -352,31 +351,32 @@
   async function hashPin(pin, salt){
     return sha256Hex(`${pin}:${salt}`);
   }
+  
   async function ensurePinSetup(state){
-    state.security = state.security || { pinSalt:"", pinHash:"", pinSetAt:null };
-    if(!state.security.pinSalt) state.security.pinSalt = genSalt();
-    if(!state.security.pinHash){
-      state.security.pinHash = await hashPin(PLUSMINUS.defaultPin, state.security.pinSalt);
-      state.security.pinSetAt = Date.now();
+    // ✅ Folosim cheile standard din joc (security.salt, security.hash)
+    state.security = state.security || {};
+    if(!state.security.salt) state.security.salt = genSalt();
+    
+    if(!state.security.hash){
+      state.security.hash = await hashPin(PLUSMINUS.defaultPin, state.security.salt);
       saveState(state);
     }
     return state;
   }
+  
   async function verifyPin(state, pin){
     await ensurePinSetup(state);
-    const h = await hashPin(pin, state.security.pinSalt);
-    return h === state.security.pinHash;
+    const h = await hashPin(pin, state.security.salt);
+    return h === state.security.hash;
   }
 
   // Render summary on card
   function renderCard(){
     const s = loadState();
     if(!s){
-      ui.pmLevel.textContent = "—";
-      ui.pmXp.textContent = "—";
-      ui.pmStreak.textContent = "—";
-      ui.pmCoins.textContent = "—";
-      ui.pmStatus.textContent = "Progres: (încă nu există) — apasă Start 😊";
+      // Reset UI if no state
+      ui.pmLevel.textContent = "—"; ui.pmXp.textContent = "—";
+      ui.pmStreak.textContent = "—"; ui.pmCoins.textContent = "—";
       return;
     }
     ui.pmLevel.textContent = s.economy?.level ?? "—";
@@ -384,10 +384,8 @@
     ui.pmStreak.textContent = s.economy?.streak ?? "—";
     ui.pmCoins.textContent = s.economy?.coins ?? "—";
 
-    const attempts = Object.values(s.skills||{}).reduce((t,sk)=>t+(sk.attempts||0),0);
-    ui.pmStatus.textContent = attempts
-      ? `Progres: ${attempts} exerciții încercate • Best streak: ${s.economy?.bestStreak ?? 0}`
-      : "Progres: începe cu Start 😊";
+    const medals = Object.values(s.skills||{}).filter(sk => (sk.m||0) >= 0.55).length;
+    ui.pmStatus.textContent = `Progres: ${medals} medalii obținute • Streak activ: ${s.economy?.streak ?? 0}`;
   }
 
   function renderProgressDialog(s){
@@ -397,20 +395,26 @@
     ui.dlgCoins.textContent = s.economy?.coins ?? "—";
 
     ui.dlgSkills.innerHTML = "";
+    // ✅ Adaptat pentru structura v3.0 (chei scurte: n, m, l)
     for(const sk of Object.values(s.skills||{})){
-      const pct = Math.round((sk.mastery ?? 0)*100);
+      const valName = sk.n || sk.name || "Skill";
+      const valLvl = sk.l || sk.level || 1;
+      const valM = (sk.m !== undefined) ? sk.m : (sk.mastery || 0);
+      
+      const pct = Math.round(valM * 100);
+      
       const div = document.createElement("div");
       div.className = "skill";
       div.innerHTML = `
-        <b>${sk.name || "Skill"}</b>
-        <small>Nivel: ${sk.level ?? 1} • Mastery: ${pct}% • Corecte: ${(sk.correct||0)}/${(sk.attempts||0)}</small>
+        <b>${valName}</b>
+        <small>Nivel: ${valLvl} • Mastery: ${pct}%</small>
         <div class="meter"><i style="width:${pct}%"></i></div>
       `;
       ui.dlgSkills.appendChild(div);
     }
   }
 
-  // PIN flow: queue an action after success
+  // PIN flow
   let afterPinAction = null;
 
   function openPin(action){
@@ -418,7 +422,7 @@
     ui.pinMsg.textContent = "";
     ui.pinInput.value = "";
     ui.pinDlg.showModal();
-    setTimeout(()=>ui.pinInput.focus(), 0);
+    setTimeout(()=>ui.pinInput.focus(), 50);
   }
 
   ui.pinCancel.onclick = ()=>ui.pinDlg.close();
@@ -430,23 +434,27 @@
   ui.pinOk.onclick = async () => {
     const pin = (ui.pinInput.value || "").trim();
     if(pin.length < 4){
-      ui.pinMsg.textContent = "PIN prea scurt (minim 4 cifre).";
+      ui.pinMsg.textContent = "PIN prea scurt.";
       return;
     }
     let s = loadState();
     if(!s){
-      ui.pinMsg.textContent = "Nu există progres încă. Apasă Start mai întâi.";
+      ui.pinMsg.textContent = "Nu există progres. Joacă întâi.";
       return;
     }
-    const ok = await verifyPin(s, pin);
-    if(!ok){
-      ui.pinMsg.textContent = "PIN greșit.";
-      ui.pinInput.value = "";
-      ui.pinInput.focus();
-      return;
+    try {
+      const ok = await verifyPin(s, pin);
+      if(!ok){
+        ui.pinMsg.textContent = "PIN greșit.";
+        ui.pinInput.value = "";
+        ui.pinInput.focus();
+        return;
+      }
+      ui.pinDlg.close();
+      if(typeof afterPinAction === "function") afterPinAction();
+    } catch(e) {
+      ui.pinMsg.textContent = "Eroare securitate.";
     }
-    ui.pinDlg.close();
-    if(typeof afterPinAction === "function") afterPinAction();
   };
 
   // Buttons
@@ -472,7 +480,6 @@
 
   // Init
   renderCard();
-  // re-render if user comes back from module
   window.addEventListener("focus", renderCard);
 })();
 </script>
