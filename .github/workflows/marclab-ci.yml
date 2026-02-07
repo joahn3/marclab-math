@@ -2,12 +2,22 @@ name: marclab-ci
 on: [push, pull_request]
 
 jobs:
-  sanity:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Ensure entrypoints exist
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Sanity: required entrypoints exist
         run: |
           test -f index.html
           test -f plusminus/index.html
+
+      - name: Install dev tools
+        run: npm install
+
+      - name: Lint (HTML/CSS/JS)
+        run: npm run lint
