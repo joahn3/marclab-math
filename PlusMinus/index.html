@@ -3,7 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Marc • Matematică (1–10)</title>
+  <title>MarcLab → PlusMinus (Level 1: 1–10)</title>
+  <meta name="description" content="MarcLab → PlusMinus (Level 1: 1–10). Offline, progres adaptiv, gamificare, memorie locală." />
   <style>
     :root{
       --bg:#0b1220;
@@ -118,8 +119,6 @@
       touch-action: manipulation;
     }
     .btn:active{transform: translateY(1px)}
-    .btn.good{border-color: rgba(52,211,153,.35)}
-    .btn.bad{border-color: rgba(251,113,133,.35)}
     .btn.small{font-size:16px; font-weight:800; padding:12px 12px; border-radius:14px;}
     .btn.primary{background: rgba(96,165,250,.18); border-color: rgba(96,165,250,.35)}
     .btn.warn{background: rgba(251,191,36,.14); border-color: rgba(251,191,36,.35)}
@@ -188,8 +187,8 @@
   <div class="app">
     <div class="top">
       <div class="brand">
-        <b>Marc • Matematică (1–10)</b>
-        <span>offline • memorie locală • progres adaptiv • sticker vibes ⭐</span>
+        <b>MarcLab → PlusMinus</b>
+        <span>Level 1: 1–10 • offline • progres adaptiv • gamificare • memorie locală ⭐</span>
       </div>
       <div class="stats">
         <div class="pill"><small>LEVEL</small> <span id="uiLevel">1</span></div>
@@ -203,8 +202,8 @@
       <div class="card prompt">
         <div class="row" style="justify-content:space-between">
           <div>
-            <div class="h">Exercițiu</div>
-            <div class="subtext" id="uiMode">—</div>
+            <div class="h">Exercițiu • PlusMinus</div>
+            <div class="subtext" id="uiMode">Level 1: 1–10</div>
           </div>
           <div class="row">
             <button class="btn small ghost" id="btnEasy">Mai ușor</button>
@@ -212,9 +211,7 @@
           </div>
         </div>
 
-        <div id="uiProblemArea">
-          <!-- problem renders here -->
-        </div>
+        <div id="uiProblemArea"></div>
 
         <div class="feedback" id="uiFeedback" style="display:none">
           <div id="uiFeedbackText">—</div>
@@ -223,25 +220,19 @@
           </div>
         </div>
 
-        <div class="kbd" id="kbd">
-          <!-- numeric keypad -->
-        </div>
+        <div class="kbd" id="kbd"></div>
       </div>
 
       <div class="side">
         <div class="card">
-          <div class="row" style="justify-content:space-between">
-            <div>
-              <div class="h">Progres pe abilități</div>
-              <div class="subtext">Aplicația alege mai des ce e “mai greu” pentru Marc.</div>
-            </div>
-          </div>
-          <div class="grid2" id="skillsGrid"></div>
+          <div class="h">Progres pe abilități (adaptiv)</div>
+          <div class="subtext">Aplicația alege mai des ce e “mai greu” pentru Marc, dar păstrează varietate.</div>
+          <div class="grid2" id="skillsGrid" style="margin-top:12px"></div>
         </div>
 
         <div class="card">
           <div class="h">Control părinte</div>
-          <div class="subtext">Export / import progres (backup), reset, și o mică privire în date.</div>
+          <div class="subtext">Export/import progres (backup), reset, și vizualizare date locale.</div>
           <div class="footerBtns" style="margin-top:12px">
             <button class="btn small primary" id="btnParent">Dashboard</button>
             <button class="btn small" id="btnExport">Export</button>
@@ -259,8 +250,8 @@
     <div class="modal">
       <div class="row" style="justify-content:space-between;align-items:flex-start">
         <div>
-          <h3>Dashboard părinte</h3>
-          <p>Totul rămâne local. Poți reseta progresul sau doar anumite abilități.</p>
+          <h3>Dashboard părinte • MarcLab → PlusMinus</h3>
+          <p>Totul rămâne local (browser). Pentru siguranță, fă export periodic.</p>
         </div>
         <button class="btn small" id="btnCloseDlg">Închide</button>
       </div>
@@ -280,7 +271,13 @@
 
 <script>
 (() => {
-  const STORAGE_KEY = "marc-math-v1";
+  /**
+   * MarcLab → PlusMinus (Level 1: 1–10)
+   * - localStorage for memory
+   * - adaptive selection per skill mastery
+   * - gamification: XP/Level/Streak/Coins
+   */
+  const STORAGE_KEY = "marclab-plusminus-l1-v1";
 
   const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
   const now = ()=>performance.now();
@@ -295,18 +292,18 @@
 
   function defaultState(){
     return {
-      meta: { version: 1, createdAt: Date.now() },
+      meta: { brand: "MarcLab", module: "PlusMinus", level: "L1_1-10", version: 1, createdAt: Date.now() },
       player: { name: "Marc" },
       economy: { xp: 0, level: 1, coins: 0, streak: 0, bestStreak: 0 },
       // mastery: 0..1 (mai mare = mai bun)
       skills: {
-        add:      { name:"Adunări", level:1, mastery:.45, attempts:0, correct:0, emaTime: 0, last: null },
-        sub:      { name:"Scăderi", level:1, mastery:.35, attempts:0, correct:0, emaTime: 0, last: null },
-        make10:   { name:"Până la 10", level:1, mastery:.30, attempts:0, correct:0, emaTime: 0, last: null },
-        compare:  { name:"Compară", level:1, mastery:.30, attempts:0, correct:0, emaTime: 0, last: null },
-        count:    { name:"Numără", level:1, mastery:.40, attempts:0, correct:0, emaTime: 0, last: null },
+        add:      { name:"Adunări",      level:1, mastery:.45, attempts:0, correct:0, emaTime: 0, last: null },
+        sub:      { name:"Scăderi",      level:1, mastery:.35, attempts:0, correct:0, emaTime: 0, last: null },
+        make10:   { name:"Până la 10",   level:1, mastery:.30, attempts:0, correct:0, emaTime: 0, last: null },
+        compare:  { name:"Compară",      level:1, mastery:.30, attempts:0, correct:0, emaTime: 0, last: null },
+        count:    { name:"Numără",       level:1, mastery:.40, attempts:0, correct:0, emaTime: 0, last: null },
       },
-      history: [] // ultimele N răspunsuri (mini)
+      history: [] // ultimele N răspunsuri
     };
   }
 
@@ -315,8 +312,9 @@
       const raw = localStorage.getItem(STORAGE_KEY);
       if(!raw) return defaultState();
       const s = JSON.parse(raw);
-      // soft-migrate
-      if(!s.skills) return defaultState();
+      if(!s.skills || !s.economy) return defaultState();
+      // ensure meta fields exist
+      s.meta = s.meta || defaultState().meta;
       return s;
     }catch(e){
       return defaultState();
@@ -328,20 +326,17 @@
   }
 
   function xpToLevel(xp){
-    // level 1..∞, 100 xp per level (simplu pt copii)
     return Math.floor(xp / 100) + 1;
   }
 
   function award(correct, timeMs){
     const eco = state.economy;
 
-    // XP: corect = 10 + bonus mic, greșit = 2
     let gained = correct ? 10 : 2;
-
-    // bonus pt răspuns rapid (dar nu stresăm copilul)
     if(correct && timeMs > 0 && timeMs < 6000) gained += 2;
 
     eco.xp += gained;
+
     const newLevel = xpToLevel(eco.xp);
     if(newLevel > eco.level){
       eco.level = newLevel;
@@ -352,7 +347,6 @@
     if(correct){
       eco.streak += 1;
       eco.bestStreak = Math.max(eco.bestStreak, eco.streak);
-      // coin pentru streak din 3 în 3
       if(eco.streak % 3 === 0){
         eco.coins += 1;
         toast("+1 coin 🪙");
@@ -368,40 +362,32 @@
     if(correct) sk.correct += 1;
     sk.last = { correct, timeMs, at: Date.now() };
 
-    // EMA time (exponential moving average)
     if(timeMs && timeMs > 0){
       sk.emaTime = sk.emaTime ? (0.8*sk.emaTime + 0.2*timeMs) : timeMs;
     }
 
-    // mastery update (simplu + stabil):
-    // + corect -> urcă; greșit -> scade; timp mare -> ușor penalizat
-    const timePenalty = (timeMs && timeMs > 0) ? clamp((timeMs - 9000) / 25000, 0, 0.10) : 0; // după 9s, mică penalizare
+    const timePenalty = (timeMs && timeMs > 0) ? clamp((timeMs - 9000) / 25000, 0, 0.10) : 0;
     const delta = correct ? 0.07 : -0.08;
     sk.mastery = clamp(sk.mastery + delta - timePenalty, 0.05, 0.98);
 
-    // “level” pe skill (nu același cu level global)
-    // crește când mastery trece praguri și are suficiente încercări
     const m = sk.mastery;
     const a = sk.attempts;
     let target = 1;
-    if(m > .55 && a >= 8) target = 2;
+    if(m > .55 && a >= 8)  target = 2;
     if(m > .70 && a >= 16) target = 3;
     if(m > .82 && a >= 26) target = 4;
     sk.level = Math.max(sk.level, target);
   }
 
   function pickSkill(){
-    // choose weakest mastery, but keep variety
     const keys = Object.keys(state.skills);
     const weights = keys.map(k => {
       const sk = state.skills[k];
       const need = (1 - sk.mastery);
-      const variety = 0.15; // ca să nu repete la infinit aceeași abilitate
-      const w = need + variety;
-      return { k, w };
+      const variety = 0.15;
+      return { k, w: need + variety };
     });
 
-    // bias: dacă tocmai a greșit ceva, revine mai des la acel skill
     const last = state.history[state.history.length - 1];
     if(last && last.correct === false){
       const item = weights.find(x => x.k === last.skill);
@@ -417,18 +403,21 @@
     return weights[0].k;
   }
 
+  function randomInt(min, max){
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
   function genProblem(skillKey){
     const sk = state.skills[skillKey];
     const lvl = sk.level;
 
-    // difficulty constraints by skill-level (child friendly)
     if(skillKey === "count"){
       const n = randomInt(1, 10);
       return { skill: skillKey, type:"dots", text:`Numără punctele`, a:n, b:null, op:null, answer:n };
     }
 
     if(skillKey === "compare"){
-      const max = lvl >= 3 ? 10 : 8;
+      const max = (lvl >= 3) ? 10 : 8;
       const a = randomInt(1, max);
       const b = randomInt(1, max);
       const answer = a === b ? "=" : (a > b ? ">" : "<");
@@ -437,39 +426,28 @@
 
     if(skillKey === "make10"){
       const a = randomInt(1, 9);
-      const answer = 10 - a;
-      return { skill: skillKey, type:"make10", text:`Cât lipsește până la 10?`, a, b:null, op:"+", answer };
+      return { skill: skillKey, type:"make10", text:`Cât lipsește până la 10?`, a, b:null, op:"+", answer: (10 - a) };
     }
 
     if(skillKey === "add"){
-      // lvl: 1 sum<=5, 2 sum<=10 with small addends, 3 includes 0, 4 any within 10
       let maxSum = (lvl===1) ? 5 : 10;
       let a = (lvl>=3) ? randomInt(0, 10) : randomInt(1, 9);
       let b = randomInt(0, maxSum - a);
-      // keep b small early
       if(lvl<=2) b = randomInt(0, Math.min(5, maxSum - a));
-      const answer = a + b;
-      return { skill: skillKey, type:"eq", text:`Adună`, a, b, op:"+", answer };
+      return { skill: skillKey, type:"eq", text:`Adună`, a, b, op:"+", answer: a + b };
     }
 
     if(skillKey === "sub"){
-      // lvl: 1 a<=8, b small; 2 a<=10, b<=5; 3 includes b any; 4 includes 0 results a-b
       const aMax = (lvl===1) ? 8 : 10;
       let a = randomInt(1, aMax);
       let b = (lvl<=2) ? randomInt(0, Math.min(5, a)) : randomInt(0, a);
-      const answer = a - b;
-      return { skill: skillKey, type:"eq", text:`Scade`, a, b, op:"−", answer };
+      return { skill: skillKey, type:"eq", text:`Scade`, a, b, op:"−", answer: a - b };
     }
 
-    // fallback
     return { skill: "add", type:"eq", text:"Adună", a:1, b:1, op:"+", answer:2 };
   }
 
-  function randomInt(min, max){
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  }
-
-  // UI
+  // UI refs
   const ui = {
     level: document.getElementById("uiLevel"),
     xp: document.getElementById("uiXp"),
@@ -523,12 +501,68 @@
     }
   }
 
+  function setAnswer(val){
+    const box = document.getElementById("answerBox");
+    if(box) box.textContent = val;
+  }
+
+  function renderKeypad(){
+    ui.kbd.innerHTML = "";
+
+    if(current.type === "compare"){
+      const keys = ["<", "=", ">"];
+      for(const k of keys){
+        const b = document.createElement("button");
+        b.className = "btn";
+        b.textContent = k;
+        b.onclick = ()=>submitAnswer(k);
+        ui.kbd.appendChild(b);
+      }
+      ["Schimbă", "—", "—"].forEach((t, idx)=>{
+        const b = document.createElement("button");
+        b.className = "btn small " + (idx===0 ? "warn" : "ghost");
+        b.textContent = t;
+        b.disabled = idx!==0;
+        if(idx===0) b.onclick = ()=>newRound();
+        ui.kbd.appendChild(b);
+      });
+      return;
+    }
+
+    const nums = [1,2,3,4,5,6,7,8,9,0,"10"];
+    nums.forEach(n=>{
+      const b = document.createElement("button");
+      b.className = "btn";
+      b.textContent = n;
+      b.onclick = ()=>submitAnswer(String(n));
+      ui.kbd.appendChild(b);
+    });
+
+    const back = document.createElement("button");
+    back.className = "btn small";
+    back.textContent = "Șterge";
+    back.onclick = ()=>setAnswer("?");
+    ui.kbd.appendChild(back);
+
+    const skip = document.createElement("button");
+    skip.className = "btn small warn";
+    skip.textContent = "Schimbă";
+    skip.onclick = ()=>newRound();
+    ui.kbd.appendChild(skip);
+
+    const easy = document.createElement("button");
+    easy.className = "btn small ghost";
+    easy.textContent = "Mai ușor";
+    easy.onclick = ()=>makeEasier();
+    ui.kbd.appendChild(easy);
+  }
+
   function renderProblem(){
     locked = false;
     ui.feedback.style.display = "none";
 
     const sk = state.skills[current.skill];
-    ui.mode.textContent = `${sk.name} • nivel skill ${sk.level}`;
+    ui.mode.textContent = `PlusMinus • Level 1: 1–10 • ${sk.name} • nivel skill ${sk.level}`;
 
     ui.problemArea.innerHTML = "";
 
@@ -611,65 +645,6 @@
     tStart = now();
   }
 
-  function renderKeypad(){
-    ui.kbd.innerHTML = "";
-
-    if(current.type === "compare"){
-      const keys = ["<", "=", ">"];
-      for(const k of keys){
-        const b = document.createElement("button");
-        b.className = "btn";
-        b.textContent = k;
-        b.onclick = ()=>submitAnswer(k);
-        ui.kbd.appendChild(b);
-      }
-      // filler row
-      ["Schimbă", "—", "—"].forEach((t, idx)=>{
-        const b = document.createElement("button");
-        b.className = "btn small " + (idx===0 ? "warn": "ghost");
-        b.textContent = t;
-        b.disabled = idx!==0;
-        if(idx===0) b.onclick = ()=>newRound();
-        ui.kbd.appendChild(b);
-      });
-      return;
-    }
-
-    // numeric keypad (0-10)
-    const nums = [1,2,3,4,5,6,7,8,9,0,"10"];
-    nums.forEach(n=>{
-      const b = document.createElement("button");
-      b.className = "btn";
-      b.textContent = n;
-      b.onclick = ()=>submitAnswer(String(n));
-      ui.kbd.appendChild(b);
-    });
-
-    // control row
-    const back = document.createElement("button");
-    back.className = "btn small";
-    back.textContent = "Șterge";
-    back.onclick = ()=>setAnswer("?");
-    ui.kbd.appendChild(back);
-
-    const skip = document.createElement("button");
-    skip.className = "btn small warn";
-    skip.textContent = "Schimbă";
-    skip.onclick = ()=>newRound();
-    ui.kbd.appendChild(skip);
-
-    const easy = document.createElement("button");
-    easy.className = "btn small ghost";
-    easy.textContent = "Mai ușor";
-    easy.onclick = ()=>makeEasier();
-    ui.kbd.appendChild(easy);
-  }
-
-  function setAnswer(val){
-    const box = document.getElementById("answerBox");
-    if(box) box.textContent = val;
-  }
-
   function submitAnswer(val){
     if(locked) return;
     locked = true;
@@ -680,7 +655,6 @@
     const correct = (String(val) === String(current.answer));
     const skillKey = current.skill;
 
-    // store history (keep last 60)
     state.history.push({
       at: Date.now(),
       skill: skillKey,
@@ -712,10 +686,9 @@
   }
 
   function makeEasier(){
-    // reduce skill-level for current skill (but keep minimum 1)
     const sk = state.skills[current.skill];
     sk.level = Math.max(1, sk.level - 1);
-    sk.mastery = Math.max(0.05, sk.mastery - 0.03); // small nudge
+    sk.mastery = Math.max(0.05, sk.mastery - 0.03);
     saveState();
     toast("Mai ușor 🙂");
     newRound();
@@ -729,6 +702,7 @@
 
   ui.btnParent.onclick = openParent;
   ui.btnCloseDlg.onclick = ()=>ui.parentDlg.close();
+
   ui.btnResetAll.onclick = ()=>{
     if(!confirm("Reset TOTAL? (șterge tot progresul)")) return;
     state = defaultState();
@@ -737,6 +711,7 @@
     ui.parentDlg.close();
     toast("Reset total ✅");
   };
+
   ui.btnResetSkills.onclick = ()=>{
     if(!confirm("Reset doar abilitățile? (XP rămâne)")) return;
     const keepEco = state.economy;
@@ -747,6 +722,7 @@
     ui.parentDlg.close();
     toast("Reset skills ✅");
   };
+
   ui.btnGiveCoins.onclick = ()=>{
     state.economy.coins += 50;
     saveState(); renderStats(); renderSkills();
@@ -759,7 +735,7 @@
     const blob = new Blob([JSON.stringify(state, null, 2)], {type:"application/json"});
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `marc-math-progress-${new Date().toISOString().slice(0,10)}.json`;
+    a.download = `marclab-plusminus-l1-progress-${new Date().toISOString().slice(0,10)}.json`;
     a.click();
     URL.revokeObjectURL(a.href);
     toast("Export gata ✅");
@@ -783,7 +759,6 @@
     }
   });
 
-  // Buttons
   ui.btnNext.onclick = ()=>newRound();
   ui.btnResetRound.onclick = ()=>newRound();
   ui.btnEasy.onclick = ()=>makeEasier();
@@ -792,7 +767,6 @@
   renderStats();
   renderSkills();
   newRound();
-
 })();
 </script>
 </body>
