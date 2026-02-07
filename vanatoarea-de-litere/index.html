@@ -3,28 +3,39 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Marc — Level Quest</title>
+  <title>Marc — Mountain Quest</title>
+
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏔️</text></svg>">
+
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700;900&display=swap');
 
     :root{
-      --bg1:#7dd3fc; --bg2:#e0f2fe; --bg3:#22c55e;
+      --sky1:#7dd3fc; --sky2:#e0f2fe; --sky3:#dbeafe;
+      --grass1:#34d399; --grass2:#22c55e;
       --ink:#0b1220; --white:#fff;
       --glass: rgba(0,0,0,.22);
       --stroke: rgba(255,255,255,.55);
       --shadow: 0 18px 45px rgba(0,0,0,.28);
-      --good:#16a34a; --bad:#ef4444; --gold:#f59e0b; --muted: rgba(17,24,39,.7);
+
+      --good:#16a34a;
+      --bad:#ef4444;
+      --gold:#f59e0b;
+
+      --modalBg: rgba(0,0,0,.78);
     }
 
     *{ box-sizing: border-box; }
     html, body { height: 100%; }
+
     body{
       margin:0;
       font-family: 'Quicksand', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background: linear-gradient(to bottom, var(--bg1) 0%, var(--bg2) 45%, var(--bg3) 100%);
+      background: linear-gradient(to bottom, var(--sky1) 0%, var(--sky2) 35%, var(--sky3) 50%, var(--grass1) 80%, var(--grass2) 100%);
       overflow:hidden;
+      color: var(--ink);
 
       /* iOS safe area */
       padding-top: env(safe-area-inset-top);
@@ -36,10 +47,38 @@
       min-height: 100dvh;
       touch-action: none;
       user-select:none;
-      color: var(--ink);
     }
 
-    /* soft glow on success */
+    /* subtle dark overlay for depth (like your Ioana game, but milder) */
+    body::before{
+      content:"";
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at 50% 10%, rgba(255,255,255,.0), rgba(0,0,0,.10));
+      pointer-events:none;
+      z-index: 1;
+    }
+
+    /* Fireflies (inspiration) */
+    .firefly{
+      position: fixed;
+      width: 4px; height: 4px;
+      background-color: #ffd700;
+      border-radius: 50%;
+      box-shadow: 0 0 10px #ffd700, 0 0 18px rgba(255,235,59,.9);
+      opacity: 0;
+      z-index: 2;
+      pointer-events:none;
+      animation: fly 14s linear infinite;
+    }
+    @keyframes fly{
+      0%   { transform: translate(0, 0); opacity: 0; }
+      10%  { opacity: .9; }
+      90%  { opacity: .9; }
+      100% { transform: translate(120px, -110dvh); opacity: 0; }
+    }
+
+    /* soft glow pulse on success */
     #glow{
       position: fixed;
       inset: 0;
@@ -53,7 +92,7 @@
       z-index: 25;
     }
 
-    /* topbar */
+    /* Topbar */
     #topbar{
       position: fixed;
       top: 0; left: 0; right: 0;
@@ -66,10 +105,11 @@
     }
 
     #brand{
-      font-weight: 900;
+      font-weight: 1000;
       font-size: clamp(16px, 3.2vw, 22px);
       text-shadow: 0 2px 0 rgba(255,255,255,.85);
       white-space: nowrap;
+      z-index: 40;
     }
 
     .hud{
@@ -78,6 +118,7 @@
       gap: 8px;
       flex-wrap: wrap;
       justify-content:flex-end;
+      z-index: 40;
     }
 
     .pill{
@@ -88,7 +129,7 @@
       padding: 8px 12px;
       box-shadow: 0 12px 25px rgba(0,0,0,.2);
       backdrop-filter: blur(6px);
-      font-weight: 900;
+      font-weight: 1000;
       font-size: clamp(13px, 2.6vw, 17px);
       line-height: 1;
       display:flex;
@@ -102,35 +143,36 @@
       cursor:pointer;
       border-radius: 999px;
       padding: 8px 10px;
-      font-weight: 900;
+      font-weight: 1000;
       font-size: clamp(13px, 2.6vw, 16px);
-      background: rgba(255,255,255,.85);
+      background: rgba(255,255,255,.88);
       box-shadow: 0 10px 20px rgba(0,0,0,.18);
     }
     .iconbtn:active{ transform: scale(.98); }
 
+    /* Game field */
     #game{
       position: relative;
       width: 100%;
       height: 100%;
+      z-index: 3;
     }
 
-    /* falling items */
+    /* Falling items */
     .item{
       position:absolute;
-      top: -100px;
+      top: -110px;
       filter: drop-shadow(0 14px 20px rgba(0,0,0,.22));
       animation: fall linear forwards;
       -webkit-tap-highlight-color: transparent;
       cursor: pointer;
       z-index: 10;
+      transform: translateZ(0);
     }
-
     @keyframes fall{
       to { transform: translateY(120dvh) rotate(360deg); }
     }
 
-    /* token styles */
     .token{
       display:inline-flex;
       align-items:center;
@@ -139,7 +181,7 @@
       min-height: 64px;
       padding: 10px 16px;
       border-radius: 18px;
-      background: rgba(255,255,255,.78);
+      background: rgba(255,255,255,.80);
       border: 3px solid rgba(0,0,0,.10);
       font-weight: 1000;
       font-size: clamp(40px, 8vw, 66px);
@@ -147,9 +189,7 @@
       text-shadow: 0 3px 0 rgba(255,255,255,.9);
     }
 
-    .emoji{
-      font-size: clamp(56px, 10vw, 86px);
-    }
+    .emoji{ font-size: clamp(56px, 10vw, 86px); }
 
     .colorDot{
       width: clamp(64px, 10vw, 88px);
@@ -176,7 +216,7 @@
       text-shadow: 0 3px 0 rgba(255,255,255,.9);
     }
 
-    /* floating feedback */
+    /* Floating feedback */
     .floating{
       position:absolute;
       z-index: 50;
@@ -187,30 +227,29 @@
       animation: floatUp .9s ease-out forwards;
       white-space: nowrap;
     }
-
     @keyframes floatUp{
       0%{ transform: translateY(0) scale(1); opacity:1; }
       100%{ transform: translateY(-55px) scale(1.25); opacity:0; }
     }
 
-    /* modals */
+    /* Modals */
     .modal{
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,.78);
+      background: var(--modalBg);
       backdrop-filter: blur(7px);
-      z-index: 100;
+      z-index: 120;
       display:flex;
       align-items:center;
       justify-content:center;
-      padding: 20px;
+      padding: 18px;
     }
 
     .card{
-      width: min(720px, 94vw);
+      width: min(860px, 94vw);
       background: rgba(255,255,255,.92);
       border-radius: 24px;
-      padding: 16px;
+      padding: 14px;
       box-shadow: 0 30px 90px rgba(0,0,0,.35);
       border: 2px solid rgba(255,255,255,.75);
     }
@@ -220,17 +259,18 @@
       align-items:center;
       justify-content:space-between;
       gap: 10px;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
     }
 
     .card h2{
       margin: 6px 0 6px;
-      font-size: clamp(22px, 4vw, 30px);
+      font-size: clamp(20px, 4vw, 30px);
     }
     .card p{
       margin: 6px 0;
       font-size: clamp(14px, 2.8vw, 18px);
-      font-weight: 800;
+      font-weight: 900;
       color: #111827;
     }
 
@@ -245,11 +285,11 @@
     button{
       appearance:none;
       border:none;
-      padding: 14px 18px;
+      padding: 12px 16px;
       border-radius: 999px;
       font-weight: 1000;
       cursor:pointer;
-      font-size: clamp(15px, 3vw, 18px);
+      font-size: clamp(14px, 3vw, 18px);
       box-shadow: 0 14px 30px rgba(0,0,0,.25);
       transform: translateZ(0);
     }
@@ -261,67 +301,50 @@
     .tiny{
       font-size: 12px;
       color: rgba(17,24,39,.72);
-      font-weight: 900;
+      font-weight: 1000;
       margin-top: 10px;
       text-align:center;
     }
 
     .hidden{ display:none !important; }
 
-    /* Level map grid */
-    .grid{
+    /* ===== Mountain Trail Map ===== */
+    #trailWrap{
       display:grid;
-      grid-template-columns: repeat(1, 1fr);
+      grid-template-columns: 1fr;
       gap: 12px;
-      margin-top: 10px;
-    }
-    @media (min-width: 640px){
-      .grid{ grid-template-columns: repeat(2, 1fr); }
-    }
-    @media (min-width: 980px){
-      .grid{ grid-template-columns: repeat(3, 1fr); }
     }
 
-    .levelCard{
-      background: rgba(255,255,255,.85);
-      border: 2px solid rgba(17,24,39,.10);
-      border-radius: 20px;
-      padding: 12px;
-      box-shadow: 0 14px 35px rgba(0,0,0,.12);
-      display:flex;
-      flex-direction:column;
-      gap: 8px;
+    @media (min-width: 860px){
+      #trailWrap{ grid-template-columns: 1.25fr .75fr; }
+    }
+
+    #trail{
       position: relative;
+      width: 100%;
+      height: min(58dvh, 420px);
+      border-radius: 24px;
       overflow:hidden;
+      box-shadow: 0 22px 60px rgba(0,0,0,.18);
+      border: 2px solid rgba(17,24,39,.12);
+      background: linear-gradient(to bottom, rgba(125,211,252,.95) 0%, rgba(224,242,254,.95) 50%, rgba(34,197,94,.92) 100%);
     }
 
-    .levelTop{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap: 10px;
+    /* little label bubble */
+    .bubble{
+      background: rgba(255,255,255,.88);
+      border: 2px solid rgba(17,24,39,.10);
+      border-radius: 18px;
+      padding: 10px 12px;
+      box-shadow: 0 14px 30px rgba(0,0,0,.12);
     }
 
-    .levelTitle{
-      font-weight: 1000;
-      font-size: 18px;
-      display:flex;
-      align-items:center;
-      gap: 10px;
-    }
-    .levelMeta{
-      font-weight: 900;
-      font-size: 13px;
-      color: rgba(17,24,39,.75);
-    }
-
-    .badgeRow{
+    .kv{
       display:flex;
       gap: 8px;
       flex-wrap: wrap;
-      align-items:center;
+      margin-top: 8px;
     }
-
     .chip{
       padding: 6px 10px;
       border-radius: 999px;
@@ -330,27 +353,61 @@
       background: rgba(17,24,39,.06);
       border: 2px solid rgba(17,24,39,.10);
       color: rgba(17,24,39,.85);
+      white-space: nowrap;
     }
-
     .chip.ok{ background: rgba(34,197,94,.14); border-color: rgba(34,197,94,.30); }
     .chip.lock{ background: rgba(239,68,68,.10); border-color: rgba(239,68,68,.22); }
 
-    .levelBtn{
-      margin-top: 6px;
-      width: 100%;
+    /* Flags / checkpoints */
+    .cp{
+      position:absolute;
+      transform: translate(-50%, -50%);
+      display:flex;
+      flex-direction: column;
+      align-items:center;
+      gap: 6px;
+      z-index: 10;
+      cursor:pointer;
+      user-select:none;
     }
 
-    .lockOverlay{
-      position:absolute;
-      inset:0;
-      background: linear-gradient(135deg, rgba(0,0,0,.55), rgba(0,0,0,.35));
+    .flag{
       display:flex;
       align-items:center;
       justify-content:center;
-      color:white;
+      width: 56px;
+      height: 56px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.88);
+      border: 2px solid rgba(17,24,39,.10);
+      box-shadow: 0 16px 30px rgba(0,0,0,.18);
+      font-size: 26px;
+    }
+
+    .flagMeta{
+      font-size: 12px;
       font-weight: 1000;
-      font-size: 18px;
-      gap: 10px;
+      color: rgba(17,24,39,.92);
+      text-shadow: 0 2px 0 rgba(255,255,255,.65);
+      background: rgba(255,255,255,.65);
+      border: 2px solid rgba(17,24,39,.10);
+      border-radius: 999px;
+      padding: 4px 8px;
+    }
+
+    .cp.locked{ cursor: not-allowed; }
+    .cp.locked .flag{
+      opacity: .55;
+      filter: grayscale(0.4);
+    }
+    .cp.locked .flagMeta{
+      opacity: .6;
+    }
+
+    .cp.selected .flag{
+      outline: 4px solid rgba(245,158,11,.35);
+      border-color: rgba(245,158,11,.55);
+      transform: scale(1.04);
     }
 
     /* Trophy list */
@@ -382,11 +439,48 @@
     .trophyName{ font-weight: 1000; }
     .trophyMeta{ font-weight: 900; font-size: 12px; color: rgba(17,24,39,.70); }
 
-    /* reduced motion */
+    /* Loading screen (inspiration) */
+    #loading{
+      position: fixed;
+      inset: 0;
+      background: rgba(17,24,39,.92);
+      z-index: 300;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding: 18px;
+    }
+    .loaderCard{
+      width: min(520px, 92vw);
+      background: rgba(255,255,255,.10);
+      border: 2px solid rgba(255,255,255,.18);
+      border-radius: 22px;
+      padding: 18px;
+      text-align:center;
+      color: rgba(255,255,255,.95);
+      box-shadow: 0 30px 90px rgba(0,0,0,.35);
+      backdrop-filter: blur(8px);
+    }
+    .spinner{
+      width: 54px; height: 54px;
+      border-radius: 999px;
+      border: 6px solid rgba(255,255,255,.22);
+      border-top-color: rgba(34,197,94,.95);
+      margin: 0 auto 12px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin{ to { transform: rotate(360deg); } }
+
+    /* Pause effect */
+    body.paused .item{ animation-play-state: paused !important; }
+    body.paused{ cursor: default; }
+
     @media (prefers-reduced-motion: reduce){
       .item{ animation: none !important; }
       .floating{ animation: none !important; }
       #glow{ transition: none !important; }
+      .firefly{ animation: none !important; opacity: .35; }
+      .spinner{ animation: none !important; }
     }
   </style>
 </head>
@@ -394,10 +488,21 @@
 <body>
   <div id="glow"></div>
 
+  <!-- Loading -->
+  <div id="loading">
+    <div class="loaderCard">
+      <div class="spinner"></div>
+      <div style="font-weight:1000; font-size:18px;">Se pregătește poteca... 🏔️</div>
+      <div id="loadingText" style="margin-top:10px; font-weight:900; color: rgba(255,255,255,.85);">
+        Se numără medaliile...
+      </div>
+    </div>
+  </div>
+
   <div id="topbar">
-    <div id="brand">🗺️ Marc — Level Quest</div>
+    <div id="brand">🏔️ Marc — Mountain Quest</div>
     <div class="hud">
-      <div class="pill" id="hudText">Alege un nivel 🎯</div>
+      <div class="pill" id="hudText">Alege un nivel 🏁</div>
       <button class="iconbtn" id="btnTrophies" title="Trofee">🏅</button>
       <button class="iconbtn" id="btnSound" title="Sunet">🔊 OFF</button>
       <button class="iconbtn" id="btnHome" title="Harta">🗺️</button>
@@ -406,37 +511,102 @@
 
   <div id="game"></div>
 
-  <!-- LEVEL MAP -->
-  <div id="mapModal" class="modal">
+  <!-- MAP MODAL -->
+  <div id="mapModal" class="modal hidden">
     <div class="card">
       <div class="cardHeader">
         <div>
-          <h2 style="margin:0">Harta Nivelurilor 🧩</h2>
-          <p style="margin:6px 0 0">Câștigă o medalie pe fiecare nivel: <b>5/5</b> 🏅</p>
+          <h2 style="margin:0">Traseul pe munte 🏔️🏁</h2>
+          <p style="margin:6px 0 0">Urcăm 5 checkpoint-uri. Fiecare nivel = o medalie.</p>
         </div>
-        <div style="display:flex; gap:10px; align-items:center;">
+        <div style="display:flex; gap:10px; flex-wrap: wrap;">
           <button class="ghost" id="btnReset">Reset progres</button>
           <button class="secondary" id="btnCloseMap">Închide</button>
         </div>
       </div>
 
-      <div class="grid" id="levelGrid"></div>
-      <div class="tiny">Tip: Nivelul 2 (1–10) e „în ordine” — perfect pentru 4–5 ani 🔢</div>
+      <div id="trailWrap">
+        <!-- LEFT: TRAIL -->
+        <div>
+          <div id="trail">
+            <!-- Inline SVG mountains + path (no external assets) -->
+            <svg viewBox="0 0 1000 600" width="100%" height="100%" preserveAspectRatio="none" style="position:absolute; inset:0; z-index:2;">
+              <!-- distant mountains -->
+              <polygon points="0,420 160,230 320,420" fill="rgba(17,24,39,.14)"/>
+              <polygon points="230,440 420,200 610,440" fill="rgba(17,24,39,.12)"/>
+              <polygon points="520,440 730,210 940,440" fill="rgba(17,24,39,.13)"/>
+              <!-- closer hills -->
+              <path d="M0,520 C200,470 320,540 520,500 C700,465 820,520 1000,485 L1000,600 L0,600 Z" fill="rgba(34,197,94,.35)"/>
+              <path d="M0,540 C220,505 360,585 540,540 C720,500 860,560 1000,525 L1000,600 L0,600 Z" fill="rgba(34,197,94,.45)"/>
+
+              <!-- trail path -->
+              <path d="M90,540
+                       C220,470 160,360 320,320
+                       C460,285 420,200 560,180
+                       C700,160 690,110 820,90
+                       C900,80 940,60 930,40"
+                    fill="none"
+                    stroke="rgba(255,255,255,.82)"
+                    stroke-width="16"
+                    stroke-linecap="round"
+                    stroke-dasharray="10 14"
+                    opacity="0.95"/>
+
+              <path d="M90,540
+                       C220,470 160,360 320,320
+                       C460,285 420,200 560,180
+                       C700,160 690,110 820,90
+                       C900,80 940,60 930,40"
+                    fill="none"
+                    stroke="rgba(17,24,39,.18)"
+                    stroke-width="6"
+                    stroke-linecap="round"
+                    opacity="0.75"/>
+            </svg>
+
+            <!-- checkpoints injected by JS -->
+            <div id="checkpoints" style="position:absolute; inset:0; z-index:12;"></div>
+          </div>
+
+          <div class="tiny">
+            Hint: apasă pe steguleț ca să alegi nivelul. 🏁
+          </div>
+        </div>
+
+        <!-- RIGHT: DETAILS -->
+        <div class="bubble">
+          <div style="font-weight:1000; font-size:18px;" id="selTitle">Selectează un checkpoint 🏁</div>
+          <div style="margin-top:8px; font-weight:900; color: rgba(17,24,39,.78);" id="selDesc">Aici apar detaliile nivelului.</div>
+
+          <div class="kv" id="selChips" style="margin-top:10px;"></div>
+
+          <div class="actions" style="justify-content:flex-start;">
+            <button class="primary" id="btnStartLevel" disabled>Start nivel</button>
+            <button class="ghost" id="btnOpenTrophiesFromMap">Vezi trofee</button>
+          </div>
+
+          <div class="tiny" style="text-align:left;">
+            Auto-save: progresul se salvează pe device (LocalStorage).
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- END / WIN -->
+  <!-- END MODAL -->
   <div id="endModal" class="modal hidden">
     <div class="card" style="text-align:center;">
       <h2 id="endTitle" style="margin:6px 0 8px;">BRAVO! 🏅</h2>
       <p id="endMsg" style="margin:0 0 6px;">Ai terminat nivelul!</p>
       <p id="endStats" style="margin:0 0 10px; color: rgba(17,24,39,.8);"></p>
+
       <div class="actions">
-        <button class="primary" id="btnNext">Următorul nivel ➡️</button>
+        <button class="primary" id="btnNext">Următorul checkpoint ➡️</button>
         <button class="ghost" id="btnReplay">Repetă nivelul 🔁</button>
         <button class="secondary" id="btnBackToMap">Harta 🗺️</button>
       </div>
-      <div class="tiny">Putem face și Level 6+ (silabe, cuvinte scurte, operații +/−) 😄</div>
+
+      <div class="tiny">Next-next: putem adăuga “sticker book” cu trofee animate 🧷</div>
     </div>
   </div>
 
@@ -448,37 +618,47 @@
           <h2 style="margin:0">Album Trofee 🏅</h2>
           <p style="margin:6px 0 0">Se salvează automat pe device (LocalStorage).</p>
         </div>
-        <div style="display:flex; gap:10px;">
-          <button class="ghost" id="btnExportHint" title="LocalStorage e deja exportabil din devtools 🙂">Info</button>
+        <div style="display:flex; gap:10px; flex-wrap: wrap;">
+          <button class="ghost" id="btnReset2">Reset progres</button>
           <button class="secondary" id="btnCloseTrophies">Închide</button>
         </div>
       </div>
 
       <div class="trophyList" id="trophyList"></div>
 
-      <div class="actions">
-        <button class="ghost" id="btnReset2">Reset progres</button>
-        <button class="secondary" id="btnCloseTrophies2">Închide</button>
+      <div class="tiny">
+        Tip: dacă deschizi trofeele în timpul jocului, jocul se pune pe pauză 🧊
       </div>
     </div>
   </div>
 
 <script>
 (() => {
-  const STORAGE_KEY = 'marc_level_quest_v1';
+  const STORAGE_KEY = 'marc_mountain_quest_v2';
 
   const game = document.getElementById('game');
   const glow = document.getElementById('glow');
-
   const hudText = document.getElementById('hudText');
+
   const btnTrophies = document.getElementById('btnTrophies');
   const btnSound = document.getElementById('btnSound');
   const btnHome = document.getElementById('btnHome');
 
+  const loading = document.getElementById('loading');
+  const loadingText = document.getElementById('loadingText');
+
   const mapModal = document.getElementById('mapModal');
-  const levelGrid = document.getElementById('levelGrid');
   const btnReset = document.getElementById('btnReset');
+  const btnReset2 = document.getElementById('btnReset2');
   const btnCloseMap = document.getElementById('btnCloseMap');
+
+  const checkpointsEl = document.getElementById('checkpoints');
+
+  const selTitle = document.getElementById('selTitle');
+  const selDesc = document.getElementById('selDesc');
+  const selChips = document.getElementById('selChips');
+  const btnStartLevel = document.getElementById('btnStartLevel');
+  const btnOpenTrophiesFromMap = document.getElementById('btnOpenTrophiesFromMap');
 
   const endModal = document.getElementById('endModal');
   const endTitle = document.getElementById('endTitle');
@@ -491,11 +671,8 @@
   const trophyModal = document.getElementById('trophyModal');
   const trophyList = document.getElementById('trophyList');
   const btnCloseTrophies = document.getElementById('btnCloseTrophies');
-  const btnCloseTrophies2 = document.getElementById('btnCloseTrophies2');
-  const btnReset2 = document.getElementById('btnReset2');
-  const btnExportHint = document.getElementById('btnExportHint');
 
-  // ======= tiny optional sound (WebAudio) =======
+  // ========= Audio (optional) =========
   let soundOn = false;
   let audioCtx = null;
   function ensureAudio(){
@@ -518,7 +695,7 @@
     setTimeout(()=>{ o.stop(); }, ms);
   }
 
-  // ======= helper =======
+  // ========= Helpers =========
   const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
   const nowISO = () => new Date().toISOString();
   const fmtDate = (iso) => {
@@ -527,26 +704,45 @@
     return d.toLocaleString('ro-RO', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
   };
 
+  function setHud(text){ hudText.textContent = text; }
   function glowPulse(){
     glow.style.opacity = '1';
     setTimeout(()=> glow.style.opacity = '0', 180);
   }
-
   function confettiBurst(){
-    confetti({ particleCount: 80, spread: 80, startVelocity: 35, origin: { y: 0.65 } });
+    confetti({ particleCount: 70, spread: 70, startVelocity: 35, origin: { y: 0.65 }, disableForReducedMotion: true });
   }
-
   function confettiParty(ms=1600){
     const t0 = Date.now();
     const iv = setInterval(() => {
       confetti({
-        particleCount: 45,
+        particleCount: 40,
         spread: 90,
         startVelocity: 28,
-        origin: { x: Math.random(), y: Math.random()*0.4 + 0.2 }
+        origin: { x: Math.random(), y: Math.random()*0.4 + 0.2 },
+        disableForReducedMotion: true
       });
       if (Date.now() - t0 > ms) clearInterval(iv);
     }, 220);
+  }
+
+  // Sparkles at click location (inspiration from your explode())
+  function sparkle(x, y, kind){
+    let colors = ['#ffffff'];
+    if (kind === 'target') colors = ['#22c55e', '#a7f3d0'];
+    if (kind === 'fun')    colors = ['#60a5fa', '#f59e0b'];
+    if (kind === 'bad')    colors = ['#ef4444', '#b91c1c'];
+
+    confetti({
+      particleCount: 14,
+      spread: 40,
+      origin: { x: x / window.innerWidth, y: y / window.innerHeight },
+      colors,
+      disableForReducedMotion: true,
+      gravity: 2,
+      scalar: 0.85,
+      zIndex: 99
+    });
   }
 
   function showFloating(x, y, text, color){
@@ -554,17 +750,23 @@
     el.className = 'floating';
     el.textContent = text;
     el.style.color = color;
+
     const pad = 10;
     const vw = window.innerWidth, vh = window.innerHeight;
     const left = clamp(x - 40, pad, vw - 140);
     const top  = clamp(y - 60, pad + 60, vh - 140);
     el.style.left = left + 'px';
     el.style.top = top + 'px';
+
     game.appendChild(el);
     setTimeout(()=> el.remove(), 900);
   }
 
-  // ======= Levels definition =======
+  function cleanupField(){
+    game.querySelectorAll('.item, .floating').forEach(el => el.remove());
+  }
+
+  // ========= Levels =========
   const LEVELS = [
     {
       id: 'letters',
@@ -574,11 +776,11 @@
       desc: 'Prinde literele M A R C (orice ordine).',
       mode: 'set',
       targets: ['M','A','R','C'],
-      targetRenderer: (val) => {
-        const span = document.createElement('div');
-        span.className = 'token';
-        span.textContent = val;
-        return span;
+      renderer: (val) => {
+        const d = document.createElement('div');
+        d.className = 'token';
+        d.textContent = val;
+        return d;
       },
       spawn: { target: 0.62, bad: 0.14, fun: 0.24 }
     },
@@ -590,11 +792,11 @@
       desc: 'Prinde numerele 1→10 în ordine.',
       mode: 'sequence',
       targets: ['1','2','3','4','5','6','7','8','9','10'],
-      targetRenderer: (val) => {
-        const span = document.createElement('div');
-        span.className = 'token';
-        span.textContent = val;
-        return span;
+      renderer: (val) => {
+        const d = document.createElement('div');
+        d.className = 'token';
+        d.textContent = val;
+        return d;
       },
       spawn: { target: 0.68, bad: 0.12, fun: 0.20 }
     },
@@ -603,16 +805,15 @@
       title: 'Culori',
       icon: '🎨',
       medal: '🥇',
-      desc: 'Prinde toate culorile: roșu, galben, verde, albastru, mov.',
+      desc: 'Prinde: roșu, galben, verde, albastru, mov.',
       mode: 'set',
       targets: ['red','yellow','green','blue','purple'],
       labels: { red:'Roșu', yellow:'Galben', green:'Verde', blue:'Albastru', purple:'Mov' },
-      targetRenderer: (val, level) => {
-        const dot = document.createElement('div');
-        dot.className = 'colorDot';
-        dot.style.setProperty('--c', colorHex(val));
-        dot.title = level.labels[val] || val;
-        return dot;
+      renderer: (val) => {
+        const d = document.createElement('div');
+        d.className = 'colorDot';
+        d.style.setProperty('--c', colorHex(val));
+        return d;
       },
       spawn: { target: 0.64, bad: 0.12, fun: 0.24 }
     },
@@ -621,16 +822,15 @@
       title: 'Forme',
       icon: '🔺',
       medal: '🏅',
-      desc: 'Prinde toate formele: cerc, pătrat, triunghi, diamant, stea.',
+      desc: 'Prinde: cerc, pătrat, triunghi, diamant, stea.',
       mode: 'set',
       targets: ['circle','square','triangle','diamond','star'],
       labels: { circle:'Cerc', square:'Pătrat', triangle:'Triunghi', diamond:'Diamant', star:'Stea' },
-      targetRenderer: (val) => {
-        const box = document.createElement('div');
-        box.className = 'shapeToken';
-        box.textContent = shapeChar(val);
-        box.style.background = 'rgba(255,255,255,.35)';
-        return box;
+      renderer: (val) => {
+        const d = document.createElement('div');
+        d.className = 'shapeToken';
+        d.textContent = shapeChar(val);
+        return d;
       },
       spawn: { target: 0.62, bad: 0.14, fun: 0.24 }
     },
@@ -639,15 +839,15 @@
       title: 'Animale',
       icon: '🦊',
       medal: '🏆',
-      desc: 'Prinde animalele: câine, pisică, iepure, urs, vulpe.',
+      desc: 'Prinde: câine, pisică, iepure, urs, vulpe.',
       mode: 'set',
       targets: ['dog','cat','rabbit','bear','fox'],
       labels: { dog:'Câine', cat:'Pisică', rabbit:'Iepure', bear:'Urs', fox:'Vulpe' },
-      targetRenderer: (val) => {
-        const em = document.createElement('div');
-        em.className = 'emoji';
-        em.textContent = animalEmoji(val);
-        return em;
+      renderer: (val) => {
+        const d = document.createElement('div');
+        d.className = 'emoji';
+        d.textContent = animalEmoji(val);
+        return d;
       },
       spawn: { target: 0.60, bad: 0.14, fun: 0.26 }
     }
@@ -655,8 +855,7 @@
 
   const FUN_EMOJIS = ['🦖','🚀','⭐','🌈','🍄','🍓','🧃','⚡','🧠'];
   const BAD_EMOJIS = ['🌧️','☁️','⛈️'];
-
-  const PRAISE = ["Super! ✨", "Bravo! 🏅", "High-five! 🖐️", "Ești tare! 💪", "Perfect! 😄", "Bun! 🔥"];
+  const PRAISE = ["Super! ✨","Bravo! 🏅","High-five! 🖐️","Ești tare! 💪","Perfect! 😄","Bun! 🔥"];
 
   function shapeChar(v){
     switch(v){
@@ -689,7 +888,7 @@
     }
   }
 
-  // ======= Persistent state =======
+  // ========= State (LocalStorage) =========
   const defaultState = () => ({
     settings: { soundOn: false },
     progress: {
@@ -710,22 +909,18 @@
       const raw = localStorage.getItem(STORAGE_KEY);
       if(!raw) return defaultState();
       const parsed = JSON.parse(raw);
-      // minimal migration safety
       const base = defaultState();
-      const merged = {
+      return {
         settings: { ...base.settings, ...(parsed.settings || {}) },
         progress: { levels: { ...base.progress.levels, ...((parsed.progress && parsed.progress.levels) || {}) } }
       };
-      return merged;
     }catch(e){
       return defaultState();
     }
   }
-
   function saveState(){
     try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
   }
-
   function resetProgress(){
     state = defaultState();
     soundOn = !!state.settings.soundOn;
@@ -735,7 +930,6 @@
     renderTrophies();
   }
 
-  // ======= Unlock logic =======
   function isUnlocked(levelId){
     const idx = LEVELS.findIndex(l => l.id === levelId);
     if (idx === 0) return true;
@@ -743,91 +937,119 @@
     return !!state.progress.levels[prev]?.completed;
   }
 
-  // ======= UI: Map =======
+  // ========= Mountain checkpoints coordinates (percent) =========
+  const CP_POS = [
+    { x: 9,  y: 90 },  // bottom-left
+    { x: 32, y: 63 },
+    { x: 56, y: 43 },
+    { x: 82, y: 22 },
+    { x: 93, y: 9 }    // top-right summit
+  ];
+
+  let selectedLevelId = LEVELS[0].id;
+
+  function selectLevel(levelId){
+    selectedLevelId = levelId;
+    const lvl = LEVELS.find(l => l.id === levelId);
+    const prog = state.progress.levels[levelId];
+    const unlocked = isUnlocked(levelId);
+
+    // Update selected styles
+    checkpointsEl.querySelectorAll('.cp').forEach(el => {
+      el.classList.toggle('selected', el.dataset.level === levelId);
+    });
+
+    selTitle.textContent = `${lvl.icon} ${lvl.title} ${prog.completed ? lvl.medal : ''}`.trim();
+    selDesc.textContent = lvl.desc;
+
+    selChips.innerHTML = '';
+    const chipStatus = document.createElement('div');
+    chipStatus.className = 'chip ' + (prog.completed ? 'ok' : (unlocked ? '' : 'lock'));
+    chipStatus.textContent = prog.completed ? `Medalie: ${lvl.medal}` : (unlocked ? 'Disponibil' : 'Blocat');
+    selChips.appendChild(chipStatus);
+
+    const chipBest = document.createElement('div');
+    chipBest.className = 'chip';
+    chipBest.textContent = `Best: ${prog.bestTime ? prog.bestTime+'s' : '—'}`;
+    selChips.appendChild(chipBest);
+
+    const chipTries = document.createElement('div');
+    chipTries.className = 'chip';
+    chipTries.textContent = `Încercări: ${prog.tries || 0}`;
+    selChips.appendChild(chipTries);
+
+    const chipLast = document.createElement('div');
+    chipLast.className = 'chip';
+    chipLast.textContent = `Ultima: ${fmtDate(prog.lastPlayed)}`;
+    selChips.appendChild(chipLast);
+
+    btnStartLevel.disabled = !unlocked;
+    btnStartLevel.textContent = unlocked ? (prog.completed ? 'Joacă din nou' : 'Start nivel') : 'Blocat';
+  }
+
   function renderMap(){
-    levelGrid.innerHTML = '';
+    checkpointsEl.innerHTML = '';
 
     LEVELS.forEach((lvl, idx) => {
       const prog = state.progress.levels[lvl.id];
       const unlocked = isUnlocked(lvl.id);
 
-      const card = document.createElement('div');
-      card.className = 'levelCard';
+      const cp = document.createElement('div');
+      cp.className = 'cp' + (unlocked ? '' : ' locked');
+      cp.dataset.level = lvl.id;
+      cp.style.left = CP_POS[idx].x + '%';
+      cp.style.top  = CP_POS[idx].y + '%';
 
-      const top = document.createElement('div');
-      top.className = 'levelTop';
-
-      const title = document.createElement('div');
-      title.className = 'levelTitle';
-      title.innerHTML = `<span style="font-size:22px">${lvl.icon}</span> <span>${idx+1}. ${lvl.title}</span>`;
+      const flag = document.createElement('div');
+      flag.className = 'flag';
+      flag.textContent = prog.completed ? lvl.medal : '🏁';
 
       const meta = document.createElement('div');
-      meta.className = 'levelMeta';
-      const best = prog.bestTime ? `${prog.bestTime}s` : '—';
-      meta.textContent = `Best: ${best}`;
+      meta.className = 'flagMeta';
+      meta.textContent = `${idx+1}. ${lvl.title}`;
 
-      top.appendChild(title);
-      top.appendChild(meta);
+      cp.appendChild(flag);
+      cp.appendChild(meta);
 
-      const desc = document.createElement('div');
-      desc.style.fontWeight = '900';
-      desc.style.color = 'rgba(17,24,39,.78)';
-      desc.style.fontSize = '13px';
-      desc.textContent = lvl.desc;
+      cp.addEventListener('click', () => {
+        if(!unlocked){
+          beep(220, 90);
+          selectLevel(lvl.id);
+          // gentle "locked" hint
+          selDesc.textContent = 'Acest checkpoint e blocat. Termină nivelul anterior ca să urcăm mai sus 🧗';
+          return;
+        }
+        beep(720, 55);
+        selectLevel(lvl.id);
+      });
 
-      const badges = document.createElement('div');
-      badges.className = 'badgeRow';
-
-      const chipStatus = document.createElement('div');
-      chipStatus.className = 'chip ' + (prog.completed ? 'ok' : (unlocked ? '' : 'lock'));
-      chipStatus.textContent = prog.completed ? `Medalie: ${lvl.medal}` : (unlocked ? 'Disponibil' : 'Blocat');
-      badges.appendChild(chipStatus);
-
-      const chipTries = document.createElement('div');
-      chipTries.className = 'chip';
-      chipTries.textContent = `Încercări: ${prog.tries || 0}`;
-      badges.appendChild(chipTries);
-
-      const chipLast = document.createElement('div');
-      chipLast.className = 'chip';
-      chipLast.textContent = `Ultima: ${fmtDate(prog.lastPlayed)}`;
-      badges.appendChild(chipLast);
-
-      const btn = document.createElement('button');
-      btn.className = 'primary levelBtn';
-      btn.textContent = unlocked ? (prog.completed ? 'Joacă din nou' : 'Start nivel') : 'Blocat';
-      btn.disabled = !unlocked;
-      btn.addEventListener('click', () => startLevel(lvl.id));
-
-      card.appendChild(top);
-      card.appendChild(desc);
-      card.appendChild(badges);
-      card.appendChild(btn);
-
-      if(!unlocked){
-        const lock = document.createElement('div');
-        lock.className = 'lockOverlay';
-        lock.innerHTML = `🔒 Blocat`;
-        card.appendChild(lock);
-      }
-
-      levelGrid.appendChild(card);
+      checkpointsEl.appendChild(cp);
     });
 
+    // default selection: highest unlocked not completed OR highest unlocked
+    const highestUnlockedIdx = [...LEVELS].map((l,i)=>({l,i}))
+      .filter(x => isUnlocked(x.l.id))
+      .map(x=>x.i)
+      .pop() ?? 0;
+
+    const candidate = LEVELS.find((l,i)=> isUnlocked(l.id) && !state.progress.levels[l.id].completed) || LEVELS[highestUnlockedIdx];
+    selectLevel(candidate.id);
+
     openMap(true);
-    setHudText('Alege un nivel 🎯');
+    setHud('Alege un nivel 🏁');
   }
 
   function openMap(open){
     mapModal.classList.toggle('hidden', !open);
+    setPaused(open); // pause gameplay if map open
   }
 
-  // ======= UI: Trophies =======
+  // ========= Trophies =========
   function renderTrophies(){
     trophyList.innerHTML = '';
-
     LEVELS.forEach((lvl, idx) => {
       const prog = state.progress.levels[lvl.id];
+
       const row = document.createElement('div');
       row.className = 'trophyItem';
 
@@ -869,45 +1091,64 @@
   function openTrophies(open){
     trophyModal.classList.toggle('hidden', !open);
     if(open) renderTrophies();
+    setPaused(open); // pause gameplay if trophies open
   }
 
-  // ======= Gameplay =======
+  // ========= Gameplay core =========
   let active = false;
+  let paused = false;
   let spawnTimer = null;
   let startTime = 0;
   let currentLevel = null;
 
-  // tuning for kids
-  const SPAWN_MS = 950;
+  let collectedSet = new Set();
+  let seqIndex = 0;
+
+  // Base tuning (kid-friendly), but we make it slightly faster as progress grows
+  const BASE_SPAWN_MS = 950;
   const FALL_MIN = 4.0;
   const FALL_MAX = 6.2;
   const MAX_ONSCREEN = 12;
 
-  let collectedSet = new Set();
-  let seqIndex = 0;
+  function setPaused(p){
+    paused = !!p;
+    document.body.classList.toggle('paused', paused);
 
-  function cleanupField(){
-    game.querySelectorAll('.item, .floating').forEach(el => el.remove());
-  }
-
-  function setHudText(text){
-    hudText.textContent = text;
+    // stop/resume spawning loop gracefully
+    if(paused){
+      // keep timer but spawnLoop checks paused; also freeze CSS via body.paused
+    } else {
+      // nothing special; loop resumes
+    }
   }
 
   function updateHud(){
     if(!currentLevel){
-      setHudText('Alege un nivel 🎯');
+      setHud('Alege un nivel 🏁');
       return;
     }
-
     const lvl = currentLevel;
     if(lvl.mode === 'sequence'){
       const next = lvl.targets[seqIndex] || '—';
-      setHudText(`${lvl.icon} ${lvl.title} • Următorul: ${next} • ${seqIndex}/${lvl.targets.length}`);
+      setHud(`${lvl.icon} ${lvl.title} • Următorul: ${next} • ${seqIndex}/${lvl.targets.length}`);
     } else {
-      const done = collectedSet.size;
-      setHudText(`${lvl.icon} ${lvl.title} • ${done}/${lvl.targets.length}`);
+      setHud(`${lvl.icon} ${lvl.title} • ${collectedSet.size}/${lvl.targets.length}`);
     }
+  }
+
+  function progressRatio(){
+    if(!currentLevel) return 0;
+    if(currentLevel.mode === 'sequence'){
+      return currentLevel.targets.length ? (seqIndex / currentLevel.targets.length) : 0;
+    }
+    return currentLevel.targets.length ? (collectedSet.size / currentLevel.targets.length) : 0;
+  }
+
+  function currentSpawnDelay(){
+    // speed up slightly as progress increases (like your progressive difficulty, but gentle)
+    const r = progressRatio(); // 0..1
+    const d = BASE_SPAWN_MS - Math.round(220 * r); // up to -220ms
+    return clamp(d, 650, 1050);
   }
 
   function startLevel(levelId){
@@ -915,11 +1156,12 @@
     if(!lvl) return;
     if(!isUnlocked(levelId)) return;
 
-    // increment tries
+    // tries + last played
     state.progress.levels[levelId].tries = (state.progress.levels[levelId].tries || 0) + 1;
     state.progress.levels[levelId].lastPlayed = nowISO();
     saveState();
 
+    // reset state
     currentLevel = lvl;
     collectedSet = new Set();
     seqIndex = 0;
@@ -930,16 +1172,31 @@
     endModal.classList.add('hidden');
 
     active = true;
+    paused = false;
+    document.body.classList.remove('paused');
+
     startTime = Date.now();
     updateHud();
 
-    if (spawnTimer) clearInterval(spawnTimer);
-    spawnTimer = setInterval(spawnItem, SPAWN_MS);
+    if(spawnTimer) clearTimeout(spawnTimer);
+    spawnLoop(); // dynamic timer
+  }
+
+  function spawnLoop(){
+    if(!active) return;
+
+    if(paused){
+      spawnTimer = setTimeout(spawnLoop, 120);
+      return;
+    }
+
+    spawnItem();
+    spawnTimer = setTimeout(spawnLoop, currentSpawnDelay());
   }
 
   function endLevel(completed){
     active = false;
-    if (spawnTimer) clearInterval(spawnTimer);
+    if(spawnTimer) clearTimeout(spawnTimer);
     cleanupField();
 
     if(!currentLevel) return;
@@ -954,7 +1211,6 @@
     }
     saveState();
 
-    // show end modal (only if completed)
     if(completed){
       glowPulse();
       confettiBurst();
@@ -966,15 +1222,14 @@
       const best = prog.bestTime ? prog.bestTime + 's' : '—';
       endStats.textContent = `Timp: ${elapsed}s • Best: ${best} • Încercări: ${prog.tries || 0}`;
 
-      // next button enable/disable
       const idx = LEVELS.findIndex(l => l.id === currentLevel.id);
       const hasNext = idx < LEVELS.length - 1;
       btnNext.disabled = !hasNext;
       btnNext.style.opacity = hasNext ? '1' : '.55';
 
       endModal.classList.remove('hidden');
+      setPaused(true);
     } else {
-      // fallback
       renderMap();
     }
   }
@@ -989,30 +1244,27 @@
   }
 
   function randomFallDuration(isTarget){
-    // targets slightly slower (easier)
     const min = isTarget ? FALL_MIN : (FALL_MIN - 0.2);
     const max = isTarget ? FALL_MAX : (FALL_MAX - 0.1);
     return (Math.random() * (max - min) + min).toFixed(2);
   }
 
   function spawnItem(){
-    if(!active || !currentLevel) return;
-    if (game.querySelectorAll('.item').length >= MAX_ONSCREEN) return;
+    if(!active || paused || !currentLevel) return;
+    if(game.querySelectorAll('.item').length >= MAX_ONSCREEN) return;
 
     const lvl = currentLevel;
 
-    // decide type
+    // decide kind
     const r = Math.random();
-    let kind = 'fun'; // fun / bad / target
+    let kind = 'fun';
     if (r < lvl.spawn.target) kind = 'target';
     else if (r < lvl.spawn.target + lvl.spawn.bad) kind = 'bad';
     else kind = 'fun';
 
-    // build element
     const wrap = document.createElement('div');
     wrap.className = 'item';
 
-    // choose payload
     let payload = null;
     let isTarget = (kind === 'target');
 
@@ -1032,13 +1284,11 @@
       wrap.appendChild(el);
     } else {
       // target
-      // for sequence mode: prefer the "next" target to spawn a bit more
       if(lvl.mode === 'sequence'){
         const next = lvl.targets[seqIndex] || lvl.targets[lvl.targets.length - 1];
         const roll = Math.random();
         payload = roll < 0.72 ? next : lvl.targets[Math.floor(Math.random() * lvl.targets.length)];
       } else {
-        // prefer missing ones
         const missing = lvl.targets.filter(t => !collectedSet.has(t));
         payload = (missing.length && Math.random() < 0.75)
           ? missing[Math.floor(Math.random() * missing.length)]
@@ -1048,7 +1298,7 @@
       wrap.dataset.kind = 'target';
       wrap.dataset.val = payload;
 
-      const rendered = lvl.targetRenderer(payload, lvl);
+      const rendered = lvl.renderer(payload, lvl);
       wrap.appendChild(rendered);
     }
 
@@ -1056,13 +1306,15 @@
     const leftPct = Math.random() * 78 + 11; // 11..89
     wrap.style.left = leftPct + '%';
 
-    // duration
+    // duration (targets a bit slower)
     const dur = randomFallDuration(isTarget);
     wrap.style.animationDuration = dur + 's';
 
     wrap.addEventListener('pointerdown', (e) => {
       e.preventDefault();
       e.stopPropagation();
+      if(!active || paused) return;
+
       const x = e.clientX;
       const y = e.clientY;
       catchItem(wrap, x, y);
@@ -1076,12 +1328,14 @@
   }
 
   function catchItem(wrap, x, y){
-    if(!active || !currentLevel) return;
+    if(!active || paused || !currentLevel) return;
 
-    // stop animation to avoid jump
+    // stop animation to avoid "jump"
     wrap.style.animation = 'none';
 
     const kind = wrap.dataset.kind;
+    sparkle(x, y, kind);
+
     if(kind === 'bad'){
       beep(220, 90);
       showFloating(x, y, "Ups! ☔", 'var(--bad)');
@@ -1099,23 +1353,23 @@
         const next = lvl.targets[seqIndex];
         if(val === next){
           seqIndex++;
-          glowPulse(); confettiBurst();
+          glowPulse();
+          confettiBurst();
           beep(880, 70);
           showFloating(x, y, `Corect! ✅`, 'var(--good)');
           updateHud();
           completeIfReady();
         } else {
-          // gentle feedback (no hard penalty)
           beep(420, 70);
           showFloating(x, y, `Nu încă 😄`, 'rgba(17,24,39,.75)');
         }
       } else {
         if(!collectedSet.has(val)){
           collectedSet.add(val);
-          glowPulse(); confettiBurst();
+          glowPulse();
+          confettiBurst();
           beep(880, 70);
 
-          // label friendly for colors/shapes/animals
           let nice = val;
           if(lvl.labels && lvl.labels[val]) nice = lvl.labels[val];
           showFloating(x, y, `+ ${nice} ✅`, 'var(--good)');
@@ -1135,21 +1389,10 @@
     wrap.style.transition = 'transform 120ms ease, opacity 120ms ease';
     wrap.style.transform = 'scale(1.35)';
     wrap.style.opacity = '0';
-    setTimeout(() => { if(wrap.parentNode) wrap.remove(); }, 130);
+    setTimeout(()=> { if(wrap.parentNode) wrap.remove(); }, 130);
   }
 
-  // Pause on tab hidden (battery + no surprise)
-  document.addEventListener('visibilitychange', () => {
-    if (!active) return;
-    if (document.hidden) {
-      if (spawnTimer) clearInterval(spawnTimer);
-    } else {
-      if (spawnTimer) clearInterval(spawnTimer);
-      spawnTimer = setInterval(spawnItem, SPAWN_MS);
-    }
-  });
-
-  // ======= Buttons / Navigation =======
+  // ========= Buttons =========
   function syncSoundButton(){
     btnSound.textContent = soundOn ? '🔊 ON' : '🔊 OFF';
   }
@@ -1158,17 +1401,17 @@
     soundOn = !soundOn;
     state.settings.soundOn = soundOn;
     syncSoundButton();
-    if (soundOn) ensureAudio(); // must be on user gesture
+    if (soundOn) ensureAudio();
     saveState();
   });
 
   btnHome.addEventListener('click', () => {
-    // stop gameplay and go to map
+    // stop gameplay and go map
     active = false;
-    if (spawnTimer) clearInterval(spawnTimer);
+    if(spawnTimer) clearTimeout(spawnTimer);
     cleanupField();
     currentLevel = null;
-    updateHud();
+    setPaused(false);
     renderMap();
   });
 
@@ -1187,20 +1430,20 @@
   });
 
   btnCloseTrophies.addEventListener('click', () => openTrophies(false));
-  btnCloseTrophies2.addEventListener('click', () => openTrophies(false));
 
-  btnExportHint.addEventListener('click', () => {
-    alert('Trofeele sunt în LocalStorage.\nCheie: ' + STORAGE_KEY + '\nPoți exporta din DevTools → Application/Storage.');
-  });
+  btnOpenTrophiesFromMap.addEventListener('click', () => openTrophies(true));
+
+  btnStartLevel.addEventListener('click', () => startLevel(selectedLevelId));
 
   btnBackToMap.addEventListener('click', () => {
     endModal.classList.add('hidden');
-    currentLevel = null;
+    setPaused(false);
     renderMap();
   });
 
   btnReplay.addEventListener('click', () => {
     endModal.classList.add('hidden');
+    setPaused(false);
     if(currentLevel) startLevel(currentLevel.id);
   });
 
@@ -1209,15 +1452,65 @@
     const idx = LEVELS.findIndex(l => l.id === currentLevel.id);
     const next = LEVELS[idx + 1];
     endModal.classList.add('hidden');
+    setPaused(false);
     if(next) startLevel(next.id);
   });
 
-  // ======= Init =======
+  // ========= Visibility pause =========
+  document.addEventListener('visibilitychange', () => {
+    if(!active) return;
+    if(document.hidden){
+      setPaused(true);
+    } else {
+      // resume only if no modal open
+      const modalOpen = !mapModal.classList.contains('hidden') || !trophyModal.classList.contains('hidden') || !endModal.classList.contains('hidden');
+      setPaused(modalOpen);
+    }
+  });
+
+  // ========= Fireflies =========
+  function createFireflies(n=14){
+    for(let i=0; i<n; i++){
+      const fly = document.createElement('div');
+      fly.className = 'firefly';
+      fly.style.left = Math.random() * 100 + '%';
+      fly.style.top  = (Math.random() * 80 + 10) + '%';
+      fly.style.animationDuration = (Math.random() * 9 + 10) + 's';
+      fly.style.animationDelay = (Math.random() * 5) + 's';
+      document.body.appendChild(fly);
+    }
+  }
+
+  // ========= Loading screen =========
+  function runLoading(){
+    const texts = [
+      "Se numără medaliile...",
+      "Se așază stegulețele...",
+      "Se aprind licuricii...",
+      "Gata de urcare! 🧗"
+    ];
+    let i = 0;
+    loadingText.textContent = texts[0];
+
+    const iv = setInterval(() => {
+      i++;
+      if(i < texts.length){
+        loadingText.textContent = texts[i];
+      } else {
+        clearInterval(iv);
+        loading.classList.add('hidden');
+        renderMap();
+      }
+    }, 650);
+  }
+
+  // ========= Init =========
   function init(){
     soundOn = !!state.settings.soundOn;
     syncSoundButton();
-    renderMap();
+    createFireflies(14);
     renderTrophies();
+    runLoading();
   }
 
   init();
