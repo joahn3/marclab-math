@@ -7,13 +7,15 @@
     "lint:css": "stylelint --config .stylelintrc.json --custom-syntax postcss-html \"index.html\" \"plusminus/index.html\"",
     "check:js": "node tools/check-inline-js.mjs",
     "lint:js": "eslint -c .eslintrc.cjs \"index.html\" \"plusminus/index.html\"",
-    "lint": "npm run lint:html && npm run lint:css && npm run check:js && npm run lint:js"
+    "lint": "npm run lint:html && npm run lint:css && npm run check:js && npm run lint:js",
+    "test:smoke": "node tools/smoke.mjs"
   },
   "devDependencies": {
     "eslint": "8.57.0",
     "eslint-plugin-html": "7.1.0",
     "htmlhint": "1.1.4",
     "postcss-html": "1.6.0",
-    "stylelint": "16.6.1"
+    "stylelint": "16.6.1",
+    "playwright": "1.48.2"
   }
 }
