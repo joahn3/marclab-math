@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>MarcLab → PlusMinus (v2.6 Emergency)</title>
+  <title>MarcLab → PlusMinus (v2.7 Stable)</title>
   <style>
     :root {
       /* --- TEMA COSMICĂ --- */
@@ -127,7 +127,7 @@
 
   <div class="app">
     <div class="top">
-      <div class="brand"><b>MarcLab → PlusMinus</b><span>v2.6 Auto-Fix</span></div>
+      <div class="brand"><b>MarcLab → PlusMinus</b><span>v2.7 Stable</span></div>
       <div class="controls">
         <button class="pill-btn active" id="btnLvl1" onclick="app.setLevel(1)">L1: 1–10</button>
         <button class="pill-btn" id="btnLvl2" onclick="app.setLevel(2)">L2: 10–20</button>
@@ -205,14 +205,24 @@
 
 <script>
 /**
- * MarcLab → PlusMinus v2.6 EMERGENCY FIX
- * AUTO-HEALING: If it crashes, it clears data and reloads automatically.
+ * MarcLab → PlusMinus v2.7 Stable
+ * Fixes: Render Loop, Audio Sync, Safe Error Handler, Fresh Key
  */
 
-// --- GLOBAL ERROR HANDLER (The Safety Net) ---
+// --- SAFE ERROR HANDLER (Anti-Loop) ---
 window.onerror = function() {
-  // If anything breaks, clear storage and reload to fix "White Screen"
-  localStorage.clear();
+  try {
+    if (sessionStorage.getItem("ml_recovered") === "1") {
+      // Stop loop if already tried to recover
+      alert("MarcLab a întâmpinat o eroare critică. Te rog resetează progresul din Dashboard.");
+      return true; 
+    }
+    sessionStorage.setItem("ml_recovered", "1");
+    // Clear ONLY our keys
+    localStorage.removeItem("marclab-plusminus-v2-7");
+    localStorage.removeItem("marclab-plusminus-l1-v1");
+  } catch(e){}
+  
   location.reload();
   return true;
 };
@@ -243,13 +253,13 @@ const SEC = {
 };
 
 const app = (() => {
-  const KEY = 'marclab-plusminus-v2-3';
+  const KEY = 'marclab-plusminus-v2-7'; // Fresh Key
   const KEY_LEGACY = 'marclab-plusminus-l1-v1';
   const DEFAULT_PIN = "2580";
 
   function defaultState() {
     return {
-      meta: { ver: 2.6, app: "PlusMinus" },
+      meta: { ver: 2.7, app: "PlusMinus" },
       settings: { level: 1, sound: true },
       security: { salt: "", hash: "" },
       economy: { xp: 0, coins: 0, streak: 0, level: 1 },
@@ -274,7 +284,7 @@ const app = (() => {
   const save = () => {
     localStorage.setItem(KEY, JSON.stringify(state));
     const summary = {
-      meta: { brand:"MarcLab", module:"PlusMinus", version:"2.6", updatedAt: Date.now() },
+      meta: { brand:"MarcLab", module:"PlusMinus", version:"2.7", updatedAt: Date.now() },
       economy: { xp: state.economy.xp, coins: state.economy.coins, streak: state.economy.streak, level: state.economy.level },
       skills: {
         add: { name:"Adunări", level:1, mastery: state.skills.add1?.m||0 },
@@ -295,29 +305,35 @@ const app = (() => {
     if(raw) { 
       try { 
         const s = JSON.parse(raw);
-        // FORCE VALIDATION: If skills missing, FORCE RESET
-        if(!s.skills || !s.skills.add1 || !s.skills.mk10) {
-           throw "Corrupted Data"; // Trigger auto-reset
-        }
-        state = s;
-      } catch(e) { 
-        console.warn("Resetting corrupted state"); 
-        state = defaultState(); // Hard Reset
-        save();
-      } 
+        // Deep Merge to fill missing keys
+        state = { ...defaultState(), ...s };
+        state.skills = { ...defaultState().skills, ...s.skills };
+        state.settings = { ...defaultState().settings, ...s.settings };
+      } catch(e) { console.warn("Resetting corrupted state"); } 
     }
     
+    // Security Init
     if(!state.security.salt) {
       state.security.salt = SEC.salt();
       state.security.hash = await SEC.hash(DEFAULT_PIN, state.security.salt);
       save();
     }
-    renderStats(); renderSkills(); newRound();
+
+    // Audio Sync Fix
+    if(state.settings.sound === false) {
+       SFX.toggle(); // Disable SFX because it defaults to true
+    }
+
+    // Success - Clear recovery flag
+    sessionStorage.removeItem("ml_recovered");
+
+    // Init UI
+    renderStats(); 
+    newRound();
   }
 
   function pickSkill() {
     const set = state.settings.level===1 ? ['add1', 'sub1', 'mk10', 'cnt', 'cmp1'] : ['add2', 'sub2', 'cmp2'];
-    // Fallback if skill missing in object
     const weights = set.map(k => {
       const s = state.skills[k];
       return { k, w: s ? (1 - s.m) + 0.2 : 1 }; 
@@ -330,7 +346,6 @@ const app = (() => {
 
   function genProblem() {
     const skKey = pickSkill();
-    // CRASH PROTECTION: Default if undefined
     const sk = state.skills[skKey] || { n:"Exercițiu", l:1, m:0.5 }; 
     let p = { skill: skKey, type: 'numpad', viz: null, txt: sk.n };
 
@@ -361,8 +376,9 @@ const app = (() => {
     try {
       current = genProblem(); renderProblem();
     } catch(e) {
-      // If logic fails, force reload (Nuclear option)
-      localStorage.clear(); location.reload();
+      console.error(e);
+      // Fail gracefully -> recover via reload
+      localStorage.removeItem(KEY); location.reload();
     }
   }
 
@@ -373,7 +389,7 @@ const app = (() => {
     if(current.type === 'cmp') correct = String(val) === String(current.ans);
     else correct = Number(val) === Number(current.ans);
 
-    const sk = state.skills[current.skill] || {m:0.5}; // Safety
+    const sk = state.skills[current.skill] || {m:0.5};
 
     if(correct) {
       SFX.correct(); state.economy.xp += 10; state.economy.streak++;
@@ -383,8 +399,8 @@ const app = (() => {
       SFX.wrong(); state.economy.streak = 0;
       sk.m = Math.max(0.1, sk.m - 0.04);
     }
-    if(state.skills[current.skill]) state.skills[current.skill] = sk; // Save back
-    save(); renderStats(); renderSkills();
+    if(state.skills[current.skill]) state.skills[current.skill] = sk;
+    save(); renderStats();
 
     const fb = document.getElementById('uiFeedback'); fb.style.display = "flex";
     const title = document.getElementById('fbTitle'); const btn = document.getElementById('btnNext');
@@ -457,6 +473,8 @@ const app = (() => {
     document.getElementById('btnLvl1').classList.toggle('active', state.settings.level===1);
     document.getElementById('btnLvl2').classList.toggle('active', state.settings.level===2);
     document.getElementById('btnSound').style.opacity = state.settings.sound ? 1 : 0.5;
+    
+    // Skills Rendering inside Stats
     const skBox = document.getElementById('uiSkills'); skBox.innerHTML = "";
     const list = state.settings.level===1?['add1','sub1','mk10','cnt','cmp1']:['add2','sub2','cmp2'];
     list.forEach(k=>{
@@ -468,11 +486,11 @@ const app = (() => {
   }
 
   return {
-    init, setLevel:(l)=>{state.settings.level=l; save(); renderStats(); renderSkills(); newRound();},
+    init, setLevel:(l)=>{state.settings.level=l; save(); renderStats(); newRound();},
     toggleSound:()=>{state.settings.sound=SFX.toggle(); renderStats();},
     makeEasier, newRound,
     parentGate:()=>{ document.getElementById('pinMsg').innerText=""; document.getElementById('pinInput').value=""; document.getElementById('pinDlg').showModal(); setTimeout(()=>document.getElementById('pinInput').focus(),100); },
-    resetAll:()=>{ if(confirm("Ștergi tot?")) { localStorage.clear(); location.reload(); } },
+    resetAll:()=>{ if(confirm("Ștergi tot?")) { localStorage.removeItem(KEY); localStorage.removeItem(KEY_LEGACY); location.reload(); } },
     giveCoins:()=>{ state.economy.coins+=50; save(); renderStats(); toast("+50 🪙"); },
     changePin:async()=>{ const p=prompt("PIN Nou:"); if(p&&p.length>=4){ state.security.salt=SEC.salt(); state.security.hash=await SEC.hash(p,state.security.salt); save(); toast("PIN Schimbat"); } },
     exportData:()=>{ document.getElementById('stateDump').value=JSON.stringify(state,null,2); const b=new Blob([JSON.stringify(state)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='marclab_v2.json'; a.click(); },
