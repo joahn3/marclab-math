@@ -2,9 +2,9 @@
 <html lang="ro">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>MarcLab → PlusMinus (v2.8.1 Super Kid MobileFit)</title>
-  <meta name="description" content="MarcLab PlusMinus v2.8.1 Super Kid: MobileFit via visualViewport height, grid topbar on mobile, height-aware autoscale, adaptive keypad, prompts + level map + medals." />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+  <title>MarcLab → PlusMinus (v3.0 MobileFit)</title>
+  <meta name="description" content="MarcLab PlusMinus v3.0 MobileFit: Fixed overlaps, safe spacing, height-aware autoscale, adaptive keypad." />
   <style>
     :root{
       --bg:#0f172a; --card:#1e293b; --line:rgba(255,255,255,.1);
@@ -21,23 +21,24 @@
       --S: 1;
 
       /* Fluid spacing */
-      --pad: clamp(12px, 2.2vw, 18px);
-      --gap: clamp(10px, 1.8vw, 16px);
+      --pad: clamp(10px, 2vw, 18px);
+      --gap: clamp(8px, 1.5vw, 16px);
 
       /* Game sizing (scaled) */
-      --pillFs: clamp(12px, calc(13px * var(--S)), 15px);
-      --pillPadY: clamp(9px, calc(10px * var(--S)), 12px);
-      --pillPadX: clamp(12px, calc(14px * var(--S)), 18px);
+      --pillFs: clamp(11px, calc(13px * var(--S)), 15px);
+      --pillPadY: clamp(6px, calc(10px * var(--S)), 12px);
+      --pillPadX: clamp(10px, calc(14px * var(--S)), 18px);
 
-      --eqFs: clamp(38px, calc(54px * var(--S)), 72px);
-      --eqBoxW: clamp(90px, calc(110px * var(--S)), 140px);
-      --eqBoxH: clamp(66px, calc(86px * var(--S)), 104px);
+      --eqFs: clamp(32px, calc(54px * var(--S)), 72px);
+      --eqBoxW: clamp(80px, calc(110px * var(--S)), 140px);
+      --eqBoxH: clamp(60px, calc(86px * var(--S)), 104px);
 
+      /* Keypad buttons: Reduced padding to prevent overlap */
       --btnFs: clamp(18px, calc(28px * var(--S)), 36px);
-      --btnPad: clamp(12px, calc(18px * var(--S)), 24px);
-      --btnRadius: clamp(14px, calc(16px * var(--S)), 18px);
+      --btnPad: clamp(8px, calc(16px * var(--S)), 24px); 
+      --btnRadius: clamp(12px, calc(16px * var(--S)), 18px);
 
-      --kbdGap: clamp(8px, calc(10px * var(--S)), 12px);
+      --kbdGap: clamp(6px, calc(10px * var(--S)), 12px);
 
       /* Super-kid rounding defaults */
       --round: 18px;
@@ -45,7 +46,7 @@
 
     *{ box-sizing:border-box; user-select:none; -webkit-tap-highlight-color:transparent; }
 
-    html, body { height:100%; }
+    html, body { height:100%; overscroll-behavior: none; }
 
     body{
       margin:0; font-family:var(--font);
@@ -87,62 +88,57 @@
       min-height:0;
     }
 
-    /* ✅ TOP BAR: grid (prevents overlap on wrap) */
+    /* ✅ TOP BAR: IMPROVED MOBILE LAYOUT */
     .top{
-      display:grid;
-      grid-template-columns: 1fr auto;
-      grid-template-areas:
-        "brand stats"
-        "controls stats";
-      gap:10px 12px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
       align-items:center;
+      justify-content:space-between;
 
       background:rgba(30,41,59,.62);
       backdrop-filter:blur(10px);
-      padding:12px 16px;
+      padding:10px 14px;
       border-radius:var(--radius);
       border:1px solid var(--line);
     }
-    .brand{ grid-area:brand; min-width:0; }
-    .controls{ grid-area:controls; min-width:0; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    
+    .brand-section { display:flex; flex-direction:column; gap:2px; }
+    .brand b{
+      font-size:16px; color:var(--accent); letter-spacing:-.02em;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .brand span{font-size:11px; color:var(--muted);}
+
+    .controls{ display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
     .stats{
-      grid-area:stats;
-      min-width:0;
-      display:flex; gap:10px; align-items:center; flex-wrap:wrap;
-      justify-content:flex-end;
-      justify-self:end;
-      align-self:stretch;
-      align-content:center;
+      display:flex; gap:8px; align-items:center; 
     }
 
-    @media(max-width:900px){
+    /* Mobile specific Top Bar adjustments */
+    @media(max-width:600px){
       .top{
-        grid-template-columns: 1fr;
-        grid-template-areas:
-          "brand"
-          "controls"
-          "stats";
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        padding: 8px 12px;
       }
-      .stats{ justify-content:flex-start; justify-self:start; }
+      .top-row { display:flex; justify-content:space-between; align-items:center; width:100%; }
+      .controls { justify-content: space-between; width:100%; }
+      .pill-btn { flex:1; text-align:center; justify-content:center; display:flex; align-items:center;}
+      .stats { display:none; } /* Hide stats in top bar on super small screens, show in drawer/row 1? No, let's keep compact */
+    }
+    /* Compact stat row for mobile */
+    .mobile-stats { display:none; gap:6px; font-size:12px; }
+    @media(max-width:600px){
+        .stats { display:none; } 
+        .mobile-stats { display:flex; align-items:center; }
     }
 
     body.kid .top{
       background:rgba(30,41,59,.72);
       border-color:rgba(255,255,255,.13);
     }
-
-    .brand b{
-      font-size:18px;
-      color:var(--accent);
-      letter-spacing:-.02em;
-      display:flex;
-      align-items:center;
-      gap:8px;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-    .brand span{font-size:12px; color:var(--muted); display:block;}
 
     .pill-btn{
       background:rgba(255,255,255,.05);
@@ -151,26 +147,26 @@
       padding:var(--pillPadY) var(--pillPadX);
       border-radius:999px;
       font-size:var(--pillFs);
-      font-weight:1000;
+      font-weight:700;
       cursor:pointer;
       touch-action:manipulation;
       white-space:nowrap;
       transition:transform .08s ease;
     }
-    .pill-btn:active{ transform:scale(.98); }
-    .pill-btn.active{ background:var(--accent); color:#0f172a; border-color:var(--accent); }
+    .pill-btn:active{ transform:scale(.96); }
+    .pill-btn.active{ background:var(--accent); color:#0f172a; border-color:var(--accent); font-weight:800; }
     .pill-btn.primary{ background:rgba(250,204,21,.12); border-color:rgba(250,204,21,.35); color:var(--gold); }
     .pill-btn.kidToggle{ background:rgba(124,58,237,.14); border-color:rgba(124,58,237,.35); color:#ddd6fe; }
 
     .stat{
-      padding:6px 12px;
+      padding:4px 10px;
       background:rgba(0,0,0,.3);
       border-radius:999px;
       border:1px solid var(--line);
-      font-size:13px;
-      font-weight:1000;
+      font-size:12px;
+      font-weight:700;
       display:flex;
-      gap:6px;
+      gap:5px;
       align-items:center;
       white-space:nowrap;
     }
@@ -181,7 +177,7 @@
       flex:1; min-height:0;
       display:grid;
       grid-template-columns:1.25fr .75fr;
-      grid-template-rows: 1fr; /* ✅ ensure row stretches to available height */
+      grid-template-rows: 1fr;
       gap:var(--gap);
       align-items:stretch;
     }
@@ -195,7 +191,7 @@
       border:1px solid var(--line);
       border-radius:var(--radius);
       box-shadow:var(--shadow);
-      padding:clamp(14px, 2.2vw, 20px);
+      padding:clamp(12px, 2.2vw, 20px);
       position:relative;
       overflow:hidden;
       min-height:0;
@@ -205,13 +201,13 @@
       box-shadow: 0 16px 50px rgba(0,0,0,.55);
     }
 
-    /* ✅ GAME CARD: grid to avoid vertical squeeze causing hidden keypad rows */
+    /* ✅ GAME CARD: Flex column to ensure safe distribution */
     .prompt{
       height:100%;
-      min-height:0;
-      display:grid;
-      grid-template-rows:auto 1fr auto;
-      gap:clamp(8px, 1.2vw, 14px);
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      gap:4px; 
     }
 
     .problem-header{
@@ -219,10 +215,12 @@
       justify-content:space-between;
       align-items:center;
       gap:10px;
+      flex-shrink: 0;
+      margin-bottom: 4px;
     }
     .h-text{
-      font-size:13px;
-      font-weight:1000;
+      font-size:12px;
+      font-weight:800;
       text-transform:uppercase;
       color:var(--muted);
       letter-spacing:1px;
@@ -231,13 +229,12 @@
       background:transparent;
       border:none;
       color:var(--muted);
-      font-weight:1000;
+      font-weight:700;
       cursor:pointer;
-      padding:10px 10px;
+      padding:6px 10px;
       border-radius:12px;
-      touch-action:manipulation;
+      font-size:12px;
     }
-    .btn-ghost:active{ background:rgba(255,255,255,.06); }
 
     /* Voice-like prompt bubble */
     .bubble{
@@ -246,28 +243,32 @@
       background:rgba(0,0,0,.22);
       border:1px solid rgba(255,255,255,.10);
       border-radius:999px;
-      padding:10px 16px;
-      font-weight:1000;
+      padding:8px 14px;
+      font-weight:700;
       color:#e2e8f0;
       text-align:center;
-      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+      box-shadow: 0 4px 15px rgba(0,0,0,.2);
       transform-origin:center;
       animation:bubbleIn .16s ease-out both;
+      font-size: 14px;
+      flex-shrink: 0;
+      margin-bottom: 8px; /* Safe space */
     }
     body.kid .bubble{
       background:linear-gradient(180deg, rgba(56,189,248,.14), rgba(0,0,0,.20));
       border-color:rgba(56,189,248,.25);
     }
-    .bubble small{ color:var(--muted); font-weight:900; }
+    .bubble small{ color:var(--muted); font-weight:400; font-size:12px; display:block; margin-top:2px;}
 
     .problem-body{
-      min-height:0;
+      flex: 1; /* Take remaining space */
       display:flex;
       flex-direction:column;
       align-items:center;
-      justify-content:center;
-      gap:10px;
+      justify-content:center; /* Center vertically */
+      gap:4px;
       padding:4px 0;
+      min-height: 80px; /* Force minimum height for equation */
     }
 
     /* Visuals */
@@ -275,24 +276,24 @@
       display:flex;
       justify-content:center;
       gap:16px;
-      margin-bottom:4px;
-      min-height:44px;
+      min-height:30px;
       flex-wrap:wrap;
+      margin-bottom: 4px;
     }
     .ten-frame{
       display:grid;
       grid-template-columns:repeat(5,1fr);
       grid-template-rows:repeat(2,1fr);
-      gap:6px;
-      padding:8px;
+      gap:4px;
+      padding:6px;
       border:2px solid var(--muted);
-      border-radius:12px;
+      border-radius:10px;
       background:rgba(0,0,0,.2);
     }
-    body.kid .ten-frame{ border-radius:16px; border-color:rgba(250,204,21,.35); }
+    body.kid .ten-frame{ border-radius:14px; border-color:rgba(250,204,21,.35); }
 
     .tf-dot{
-      width:16px; height:16px;
+      width:12px; height:12px;
       border-radius:50%;
       border:1px dashed rgba(255,255,255,.12);
     }
@@ -304,14 +305,14 @@
 
     .dot-group{
       display:flex;
-      gap:6px;
+      gap:5px;
       flex-wrap:wrap;
-      max-width:92px;
+      max-width:80px;
       justify-content:center;
       align-content:center;
     }
     .d-pt{
-      width:12px; height:12px;
+      width:10px; height:10px;
       background:var(--accent);
       border-radius:50%;
       opacity:.92;
@@ -320,32 +321,32 @@
 
     .big-eq{
       font-size:var(--eqFs);
-      font-weight:1000;
-      line-height:1.05;
+      font-weight:800;
+      line-height:1;
       display:flex;
       align-items:center;
-      gap:14px;
+      gap:8px;
       flex-wrap:wrap;
       justify-content:center;
       text-shadow:0 6px 22px rgba(0,0,0,.55);
       text-align:center;
+      margin: 4px 0 10px 0; /* Clear spacing from keypad */
     }
 
     .eqBox{
       min-width:var(--eqBoxW);
       height:var(--eqBoxH);
-      padding:0 20px;
-      border-radius:18px;
+      padding:0 10px;
+      border-radius:16px;
       border:2px solid rgba(255,255,255,.22);
       background:rgba(0,0,0,.32);
       color:var(--accent);
       display:flex;
       align-items:center;
       justify-content:center;
-      position:relative;
     }
     body.kid .eqBox{
-      border-radius:24px;
+      border-radius:20px;
       border-color:rgba(56,189,248,.28);
       background:linear-gradient(180deg, rgba(56,189,248,.10), rgba(0,0,0,.26));
     }
@@ -356,13 +357,14 @@
       width:100%;
       max-width:520px;
       margin:0 auto;
+      flex-shrink: 0; /* Do not squash keypad */
 
       display:grid;
       grid-template-columns:repeat(3,1fr);
       gap:var(--kbdGap);
 
       /* ✅ extra bottom padding so last row never sits on browser UI */
-      padding-bottom: max(8px, env(safe-area-inset-bottom));
+      padding-bottom: max(4px, env(safe-area-inset-bottom));
     }
     .kbd.wide{ grid-template-columns:repeat(5,1fr); max-width:760px; }
     .kbd.cmp{ grid-template-columns:repeat(3,1fr) !important; max-width:460px; }
@@ -374,11 +376,12 @@
       padding:var(--btnPad);
       border-radius:var(--btnRadius);
       font-size:var(--btnFs);
-      font-weight:1000;
+      font-weight:700;
       cursor:pointer;
       box-shadow:0 4px 0 rgba(0,0,0,.3);
       transition:transform .08s, filter .08s;
       touch-action:manipulation;
+      display:flex; align-items:center; justify-content:center;
     }
     .btn:active{ transform:translateY(4px); box-shadow:none; }
     .btn:hover{ filter:brightness(1.04); }
@@ -387,11 +390,11 @@
       border-radius: calc(var(--round) + 4px);
       background:linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.04));
       border-color:rgba(255,255,255,.13);
-      box-shadow:0 8px 0 rgba(0,0,0,.28);
+      box-shadow:0 6px 0 rgba(0,0,0,.28);
     }
-    body.kid .btn:active{ transform:translateY(6px); box-shadow:none; }
+    body.kid .btn:active{ transform:translateY(4px); box-shadow:none; }
 
-    .btn.small{ font-size:clamp(14px, calc(16px * var(--S)), 18px); padding:12px; }
+    .btn.small{ font-size:clamp(14px, calc(16px * var(--S)), 18px); padding:8px; }
     .btn.warn{ background:rgba(251,191,36,.15); border-color:rgba(251,191,36,.3); color:var(--warn); }
     .btn.primary{ background:rgba(56,189,248,.14); border-color:rgba(56,189,248,.35); color:var(--accent); }
     .btn.good{ background:rgba(74,222,128,.14); border-color:rgba(74,222,128,.35); color:var(--good); }
@@ -403,8 +406,8 @@
     .feedback{
       position:absolute;
       inset:0;
-      background:rgba(15,23,42,.94);
-      backdrop-filter:blur(10px);
+      background:rgba(15,23,42,.96);
+      backdrop-filter:blur(12px);
       display:none;
       flex-direction:column;
       align-items:center;
@@ -416,15 +419,15 @@
     }
     .feedback.show{ display:flex; }
     #fbIcon{ font-size:72px; animation:pop .22s ease-out both; }
-    #fbTitle{ font-size:clamp(22px, calc(26px * var(--S)), 34px); font-weight:1000; }
-    #fbSub{ color:var(--muted); font-weight:1000; font-size:clamp(13px, calc(14px * var(--S)), 16px); }
+    #fbTitle{ font-size:clamp(22px, calc(26px * var(--S)), 34px); font-weight:800; }
+    #fbSub{ color:var(--muted); font-weight:700; font-size:clamp(13px, calc(14px * var(--S)), 16px); }
 
     .btn-next{
       margin-top:18px;
       border:none;
-      padding:14px 44px;
+      padding:12px 40px;
       font-size:clamp(18px, calc(20px * var(--S)), 26px);
-      font-weight:1000;
+      font-weight:700;
       border-radius:999px;
       cursor:pointer;
       box-shadow:0 0 22px rgba(74,222,128,.35);
@@ -441,7 +444,7 @@
     /* Side panel (desktop) */
     .side{ display:flex; flex-direction:column; gap:var(--gap); min-height:0; }
     .skill-item{ padding:10px 0; border-bottom:1px solid var(--line); }
-    .skill-top{ display:flex; justify-content:space-between; font-size:13px; font-weight:1000; margin-bottom:6px; gap:10px; }
+    .skill-top{ display:flex; justify-content:space-between; font-size:13px; font-weight:700; margin-bottom:6px; gap:10px; }
     .meter{ height:6px; background:rgba(255,255,255,.1); border-radius:999px; overflow:hidden; }
     .fill{ height:100%; background:var(--accent); transition:width .35s; }
 
@@ -489,7 +492,7 @@
       transform:translateX(-50%);
       background:var(--gold);
       color:#422006;
-      font-weight:1000;
+      font-weight:700;
       padding:10px 22px;
       border-radius:999px;
       z-index:100;
@@ -536,12 +539,12 @@
       justify-content:space-between;
       gap:10px;
     }
-    .drawerHeader b{ font-size:16px; font-weight:1000; color:var(--gold); }
+    .drawerHeader b{ font-size:16px; font-weight:700; color:var(--gold); }
     .drawerClose{
       background:rgba(255,255,255,.08);
       border:1px solid var(--line);
       color:var(--text);
-      font-weight:1000;
+      font-weight:700;
       border-radius:12px;
       padding:10px 12px;
       cursor:pointer;
@@ -557,7 +560,7 @@
       background:rgba(255,255,255,.07);
       border:1px solid var(--line);
       color:var(--text);
-      font-weight:1000;
+      font-weight:700;
       border-radius:999px;
       padding:10px 14px;
       cursor:pointer;
@@ -604,7 +607,7 @@
       gap:8px;
     }
     .mapName{
-      font-weight:1000;
+      font-weight:700;
       font-size:13px;
       color:#e2e8f0;
       line-height:1.15;
@@ -614,7 +617,7 @@
       filter: drop-shadow(0 8px 18px rgba(0,0,0,.35));
     }
     .mapPct{
-      font-weight:1000;
+      font-weight:700;
       color:var(--muted);
       font-size:12px;
     }
@@ -642,7 +645,7 @@
       border:1px solid rgba(255,255,255,.12);
       background:rgba(255,255,255,.06);
       color:var(--text);
-      font-weight:1000;
+      font-weight:700;
       padding:10px 10px;
       cursor:pointer;
       touch-action:manipulation;
@@ -651,7 +654,6 @@
     .miniBtn.focus{ background:rgba(74,222,128,.14); border-color:rgba(74,222,128,.30); color:var(--good); }
     .miniBtn:active{ transform:scale(.98); }
 
-    /* PATCH #1: allow selection in inputs/textarea */
     textarea, input, .pinInput { user-select:text; -webkit-user-select:text; }
 
     /* Animations */
@@ -666,24 +668,30 @@
     .shake{ animation:shake .28s ease-in-out; }
     @keyframes slideIn{ from{transform:translateX(22px); opacity:0;} to{transform:translateX(0); opacity:1;} }
     @keyframes bubbleIn{ from{transform:scale(.96); opacity:.0;} to{transform:scale(1); opacity:1;} }
-
-    /* ✅ extra compact when height is tight */
-    @media(max-height: 760px){
-      .top{ padding:10px 12px; }
-      .card{ padding:14px; }
-      .viz-area{ min-height:38px; margin-bottom:2px; }
-      .bubble{ padding:8px 14px; }
-    }
   </style>
 </head>
 
 <body>
   <div class="app">
     <div class="top" id="topBar">
-      <div class="brand">
-        <b>🧠 MarcLab → PlusMinus</b>
-        <span>v2.8.1 Super Kid • MobileFit (no cut keypad)</span>
-      </div>
+        <div class="top-row">
+            <div class="brand-section">
+                <div class="brand">
+                    <b>🧠 MarcLab → PlusMinus</b>
+                    <span>v3.0 Super Kid • MobileFit</span>
+                </div>
+            </div>
+            <div class="mobile-stats">
+                 <div class="stat gold">🪙 <span id="uiCoinsM">0</span></div>
+                 <div class="stat">🔥 <span id="uiStreakM">0</span></div>
+            </div>
+            <div class="stats">
+                <div class="stat">XP <span id="uiXp">0</span></div>
+                <div class="stat gold">🪙 <span id="uiCoins">0</span></div>
+                <div class="stat">🔥 <span id="uiStreak">0</span></div>
+                <div class="stat">🏅 <span id="uiMedals">0</span></div>
+            </div>
+        </div>
 
       <div class="controls">
         <button class="pill-btn active" id="btnLvl1" onclick="app.setLevel(1)">L1: 1–10</button>
@@ -691,13 +699,6 @@
         <button class="pill-btn" onclick="app.toggleSound()" id="btnSound">🔊</button>
         <button class="pill-btn kidToggle" onclick="app.toggleKidMode()" id="btnKid">🧸 Super</button>
         <button class="pill-btn primary" onclick="app.toggleDrawer(true)" id="btnProgress">Progres ⭐</button>
-      </div>
-
-      <div class="stats">
-        <div class="stat">XP <span id="uiXp">0</span></div>
-        <div class="stat gold">🪙 <span id="uiCoins">0</span></div>
-        <div class="stat">🔥 <span id="uiStreak">0</span></div>
-        <div class="stat">🏅 <span id="uiMedals">0</span></div>
       </div>
     </div>
 
@@ -766,7 +767,7 @@
       <div class="drawerCard" id="drawerMap" style="display:none;">
         <div class="h-text" style="margin-bottom:10px">Harta nivelului (apasă o abilitate)</div>
         <div class="mapGrid" id="uiMap"></div>
-        <div style="margin-top:12px; color:var(--muted); font-weight:900; font-size:12px;">
+        <div style="margin-top:12px; color:var(--muted); font-weight:700; font-size:12px;">
           Medalii: 🥉 ≥55% • 🥈 ≥75% • 🥇 ≥90%
         </div>
       </div>
@@ -784,7 +785,7 @@
     <h3>Introducere PIN</h3>
     <p style="color:var(--muted); margin:0">Pentru a accesa setările.</p>
     <input id="pinInput" class="pinInput" type="password" inputmode="numeric" maxlength="8" placeholder="••••" />
-    <div id="pinMsg" style="color:var(--bad); font-weight:1000; height:20px; font-size:13px"></div>
+    <div id="pinMsg" style="color:var(--bad); font-weight:700; height:20px; font-size:13px"></div>
     <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:10px">
       <button class="btn small" onclick="safeCloseDialog('pinDlg')">Anulează</button>
       <button class="btn small primary" id="pinOk">Confirmă</button>
@@ -811,56 +812,42 @@
   </dialog>
 
 <script>
-/* Recovery guards (anti-loop) */
+/* Recovery guards */
 (function setupRecoveryGuards(){
   function recover(reason){
     try {
       const onceKey = "ml_pm_recovered_once";
       if (sessionStorage.getItem(onceKey) === "1") {
-        console.error("MarcLab recovery already attempted. Reason:", reason);
-        try {
-          const t = document.getElementById("toast");
-          if (t) { t.textContent = "Eroare. Deschide Dashboard → Reset TOTAL."; t.style.display = "block"; }
-        } catch {}
+        console.error("MarcLab recovery already attempted.");
         return;
       }
       sessionStorage.setItem(onceKey, "1");
-      localStorage.removeItem("marclab-plusminus-v2-6");
-      localStorage.removeItem("marclab-plusminus-v2-3");
-      localStorage.removeItem("marclab-plusminus-l1-v1");
+      // keep storage intact unless critical failure
     } catch {}
-    location.reload();
+    // We do NOT auto-reload in loop
   }
   window.addEventListener("error", (e) => recover(e.error || e.message));
-  window.addEventListener("unhandledrejection", (e) => recover(e.reason));
 })();
 
-/* PATCH #2: robust dialogs */
 function safeOpenDialog(id){
   const dlg = document.getElementById(id);
   if (!dlg) return false;
   try {
     if (dlg.open) return true;
     if (typeof dlg.showModal === "function") { dlg.showModal(); return true; }
-  } catch (e) {
-    console.warn("Dialog open failed:", e);
-  }
+  } catch (e) { console.warn(e); }
   return false;
 }
 function safeCloseDialog(id){
   const dlg = document.getElementById(id);
-  if (!dlg) return;
-  if (typeof dlg.close === "function") dlg.close();
+  if (dlg && typeof dlg.close === "function") dlg.close();
 }
 
-/* SFX */
 const SFX = (() => {
   let ctx = null;
   let enabled = true;
-
   function init(){
     if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
-    /* PATCH #4 */
     if (ctx && ctx.state === "suspended") ctx.resume().catch(()=>{});
   }
   function play(freq, type, dur, vol=0.1){
@@ -876,7 +863,6 @@ const SFX = (() => {
     o.connect(g); g.connect(ctx.destination);
     o.start(); o.stop(ctx.currentTime + dur);
   }
-
   return {
     isEnabled: () => enabled,
     setEnabled: (v) => { enabled = !!v; return enabled; },
@@ -887,7 +873,6 @@ const SFX = (() => {
   };
 })();
 
-/* PIN hashing */
 const SEC = {
   salt: () => Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b=>b.toString(16).padStart(2,'0')).join(''),
   hash: async (pin, salt) => {
@@ -897,11 +882,9 @@ const SEC = {
   }
 };
 
-/* Lightweight confetti */
 const Confetti = (() => {
   let raf = 0;
   let parts = [];
-
   function burst(){
     const c = document.getElementById("confetti");
     if (!c) return;
@@ -909,15 +892,12 @@ const Confetti = (() => {
     const rect = c.getBoundingClientRect();
     c.width = Math.floor(rect.width * dpr);
     c.height = Math.floor(rect.height * dpr);
-
     const ctx = c.getContext("2d");
     if (!ctx) return;
     ctx.setTransform(dpr,0,0,dpr,0,0);
-
     const w = rect.width, h = rect.height;
     const n = Math.round(70 + 40 * Math.random());
     parts = [];
-
     for (let i=0;i<n;i++){
       const x = w * 0.5 + (Math.random()-0.5) * 60;
       const y = h * 0.45 + (Math.random()-0.5) * 30;
@@ -934,11 +914,9 @@ const Confetti = (() => {
         vr: (Math.random()-0.5) * 0.25
       });
     }
-
     cancelAnimationFrame(raf);
     raf = requestAnimationFrame(t => tick(t, ctx, w, h));
   }
-
   function tick(t, ctx, w, h){
     ctx.clearRect(0,0,w,h);
     for (const p of parts){
@@ -948,7 +926,6 @@ const Confetti = (() => {
       p.rot += p.vr;
       p.o *= 0.985;
       if (p.y > h + 30) p.o = 0;
-
       if (p.o > 0.04){
         ctx.save();
         ctx.globalAlpha = Math.max(0, Math.min(1, p.o));
@@ -960,19 +937,15 @@ const Confetti = (() => {
         ctx.restore();
       }
     }
-    const alive = parts.some(p => p.o > 0.04);
-    if (alive) raf = requestAnimationFrame(tt => tick(tt, ctx, w, h));
+    if (parts.some(p => p.o > 0.04)) raf = requestAnimationFrame(tt => tick(tt, ctx, w, h));
     else ctx.clearRect(0,0,w,h);
   }
-
   return { burst };
 })();
 
-/* APP */
 const app = (() => {
   const KEY_NEW = "marclab-plusminus-v2-6";
   const KEY_OLD = "marclab-plusminus-v2-3";
-  const KEY_LEGACY = "marclab-plusminus-l1-v1";
   const DEFAULT_PIN = "2580";
 
   const ui = {
@@ -985,7 +958,7 @@ const app = (() => {
 
   function defaultState(){
     return {
-      meta: { ver: 2.81, app: "PlusMinus" },
+      meta: { ver: 3.0, app: "PlusMinus" },
       settings: { level: 1, sound: true, kidMode: true },
       security: { salt: "", hash: "" },
       economy: { xp: 0, coins: 0, streak: 0, level: 1 },
@@ -1016,19 +989,9 @@ const app = (() => {
       skills: { ...d.skills, ...(s.skills||{}) },
       history: Array.isArray(s.history) ? s.history : d.history
     };
-
     out.settings.level = (out.settings.level === 2) ? 2 : 1;
     out.settings.sound = (out.settings.sound !== false);
     out.settings.kidMode = (out.settings.kidMode !== false);
-
-    for (const k of Object.keys(out.skills)) {
-      const sk = out.skills[k];
-      if (!sk || typeof sk !== "object") continue;
-      if (typeof sk.m !== "number") sk.m = d.skills[k]?.m ?? 0.5;
-      sk.m = Math.max(0.05, Math.min(0.99, sk.m));
-      if (typeof sk.n !== "string") sk.n = d.skills[k]?.n ?? "Skill";
-      if (typeof sk.l !== "number") sk.l = d.skills[k]?.l ?? 1;
-    }
     return out;
   }
 
@@ -1041,41 +1004,20 @@ const app = (() => {
 
   function toast(msg){
     const t = document.getElementById("toast");
-    if (!t) return;
-    t.textContent = msg;
-    t.style.display = "block";
+    t.textContent = msg; t.style.display = "block";
     setTimeout(()=>{ t.style.display = "none"; }, 2000);
   }
 
-  function vibe(ms){
-    try { if (navigator.vibrate) navigator.vibrate(ms); } catch {}
-  }
+  function vibe(ms){ try { if (navigator.vibrate) navigator.vibrate(ms); } catch {} }
 
-  function writeLegacySummary(){
-    const summary = {
-      meta: { brand:"MarcLab", module:"PlusMinus", version:"2.8.1", updatedAt: Date.now() },
-      economy: { xp: state.economy.xp, coins: state.economy.coins, streak: state.economy.streak, level: state.economy.level },
-      skills: {
-        add: { name:"Adunări", level:1, mastery: state.skills.add1?.m || 0 },
-        sub: { name:"Scăderi", level:1, mastery: state.skills.sub1?.m || 0 },
-        make10: { name:"Până la 10", level:1, mastery: state.skills.mk10?.m || 0 }
-      }
-    };
-    localStorage.setItem(KEY_LEGACY, JSON.stringify(summary));
-  }
-
-  /* PATCH #3: safe save */
   function save(){
     try { localStorage.setItem(KEY_NEW, JSON.stringify(state)); }
-    catch (e) { console.error("Save failed:", e); toast("Nu pot salva (storage blocat)."); }
-    try { writeLegacySummary(); } catch {}
+    catch (e) { console.error("Save failed:", e); }
   }
 
   function loadRaw(){
     const rawNew = localStorage.getItem(KEY_NEW);
     if (rawNew) return { raw: rawNew, from: KEY_NEW };
-    const rawOld = localStorage.getItem(KEY_OLD);
-    if (rawOld) return { raw: rawOld, from: KEY_OLD };
     return { raw: null, from: null };
   }
 
@@ -1131,7 +1073,6 @@ const app = (() => {
       }
       return ui.focusSkill;
     }
-
     const set = getSkillSet();
     const weights = set.map(k => {
       const sk = state.skills[k];
@@ -1207,11 +1148,11 @@ const app = (() => {
     const pick = (arr) => arr[Math.floor(Math.random()*arr.length)];
     const tails = kid ? ["🙂", "😄", "✨", "🧠", "🏅"] : [""];
 
-    const add = ["Hai să adunăm! Pune răspunsul jos.","Super! Cât fac împreună?","Gata de calcul? Scrie rezultatul!","Adunăm rapid și frumos."];
-    const sub = ["Scădem! Câte rămân?","Ia una câte una… cât rămâne?","Perfect. Fă scăderea și scrie răspunsul."];
-    const mk10 = ["Completează până la 10.","Câte îi mai trebuie ca să fie 10?","Mai lipsește puțin… cât?"];
-    const cnt = ["Numără atent punctele.","Numără și spune-mi câte sunt!","Cu răbdare… câte puncte vezi?"];
-    const cmp = ["Alege semnul corect: < = >","Care e mai mare? Alege semnul!","Compară cele două numere."];
+    const add = ["Hai să adunăm!","Super! Cât fac împreună?","Gata de calcul?","Adunăm rapid și frumos."];
+    const sub = ["Scădem!","Ia una câte una…","Perfect. Fă scăderea."];
+    const mk10 = ["Completează până la 10.","Câte îi mai trebuie?","Mai lipsește puțin…"];
+    const cnt = ["Numără atent.","Numără punctele!","Cu răbdare… câte sunt?"];
+    const cmp = ["Care e mai mare?","Alege semnul!","Compară numerele."];
 
     let base = "Hai!";
     if (skill.startsWith("add")) base = pick(add);
@@ -1417,26 +1358,19 @@ const app = (() => {
   function renderMap(){
     const grid = document.getElementById("uiMap");
     if (!grid) return;
-
     grid.innerHTML = "";
     const list = getSkillSet();
-
     list.forEach(k=>{
       const sk = state.skills[k];
       if (!sk) return;
       const pct = Math.round((sk.m || 0) * 100);
       const icon = medalIcon(sk.m);
-
       const tile = document.createElement("div");
       tile.className = "mapTile";
-
       tile.innerHTML = `
         <div class="mapTop">
-          <div>
-            <div class="mapName">${sk.n}</div>
-            <div class="mapPct">${pct}%</div>
-          </div>
-          <div class="medal" title="Medalie">${icon}</div>
+          <div><div class="mapName">${sk.n}</div><div class="mapPct">${pct}%</div></div>
+          <div class="medal">${icon}</div>
         </div>
         <div class="mapBar"><div class="mapFill" style="width:${pct}%"></div></div>
         <div class="mapActions">
@@ -1444,46 +1378,22 @@ const app = (() => {
           <button class="miniBtn">▶️ Joacă</button>
         </div>
       `;
-
       const [btnFocus, btnPlay] = tile.querySelectorAll("button");
-      btnFocus.onclick = () => {
-        ui.focusSkill = k;
-        ui.focusLeft = 5;
-        toast(`Focus: ${sk.n} 🎯`);
-        renderProblem();
-        toggleDrawer(false);
-      };
-      btnPlay.onclick = () => {
-        ui.focusSkill = k;
-        ui.focusLeft = 1;
-        toast(`Joacă: ${sk.n} ▶️`);
-        newRound();
-        toggleDrawer(false);
-      };
-
+      btnFocus.onclick = () => { ui.focusSkill = k; ui.focusLeft = 5; toast(`Focus: ${sk.n}`); renderProblem(); toggleDrawer(false); };
+      btnPlay.onclick = () => { ui.focusSkill = k; ui.focusLeft = 1; toast(`Joacă: ${sk.n}`); newRound(); toggleDrawer(false); };
       grid.appendChild(tile);
     });
   }
 
   function renderStats(){
-    const xp = state.economy.xp;
-    const coins = state.economy.coins;
-    const streak = state.economy.streak;
+    const xp = state.economy.xp, coins = state.economy.coins, streak = state.economy.streak;
     const mcount = medalsCount();
-
-    document.getElementById("uiXp").textContent = xp;
-    document.getElementById("uiCoins").textContent = coins;
-    document.getElementById("uiStreak").textContent = streak;
-    document.getElementById("uiMedals").textContent = mcount;
-
-    const xp2 = document.getElementById("uiXp2");
-    const c2 = document.getElementById("uiCoins2");
-    const s2 = document.getElementById("uiStreak2");
-    const m2 = document.getElementById("uiMedals2");
-    if (xp2) xp2.textContent = xp;
-    if (c2) c2.textContent = coins;
-    if (s2) s2.textContent = streak;
-    if (m2) m2.textContent = mcount;
+    
+    // Updates both desktop and mobile stats
+    ["uiXp","uiXp2"].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = xp; });
+    ["uiCoins","uiCoins2","uiCoinsM"].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = coins; });
+    ["uiStreak","uiStreak2","uiStreakM"].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = streak; });
+    ["uiMedals","uiMedals2"].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = mcount; });
 
     document.getElementById("btnLvl1").classList.toggle("active", state.settings.level===1);
     document.getElementById("btnLvl2").classList.toggle("active", state.settings.level===2);
@@ -1494,26 +1404,22 @@ const app = (() => {
     renderMap();
   }
 
-  /* ✅ MobileFit: compute height from visualViewport and set --vvh */
   let raf = 0;
-  function scheduleUpdate(){
-    cancelAnimationFrame(raf);
-    raf = requestAnimationFrame(updateResponsive);
-  }
+  function scheduleUpdate(){ cancelAnimationFrame(raf); raf = requestAnimationFrame(updateResponsive); }
 
   function updateResponsive(){
     const vv = window.visualViewport;
     const w = vv ? vv.width : window.innerWidth;
     const h = vv ? vv.height : window.innerHeight;
-
-    // set real visible height (px)
+    
     document.documentElement.style.setProperty("--vvh", Math.round(h) + "px");
 
-    // ✅ height-aware autoscale
+    // Aggressive scaling on small heights
     const sW = w / 860;
     const sH = h / 920;
     let s = Math.min(sW, sH);
-    s = Math.max(0.82, Math.min(1.25, s));
+    // Relax min scale for very small phones
+    s = Math.max(0.65, Math.min(1.25, s));
     document.documentElement.style.setProperty("--S", s.toFixed(3));
 
     ui.wideKeypad = (w >= 740) || (w > h && w >= 680);
@@ -1522,31 +1428,19 @@ const app = (() => {
 
   async function init(){
     updateResponsive();
-
     window.addEventListener("resize", scheduleUpdate, { passive:true });
-    window.addEventListener("orientationchange", () => setTimeout(scheduleUpdate, 80), { passive:true });
     if (window.visualViewport){
       window.visualViewport.addEventListener("resize", scheduleUpdate, { passive:true });
       window.visualViewport.addEventListener("scroll", scheduleUpdate, { passive:true });
     }
 
-    const { raw, from } = loadRaw();
+    const { raw } = loadRaw();
     if (raw) {
-      try {
-        state = normalizeState(JSON.parse(raw));
-        if (from === KEY_OLD) {
-          localStorage.removeItem(KEY_OLD);
-          save();
-        }
-      } catch {
-        state = defaultState();
-        save();
-      }
+      try { state = normalizeState(JSON.parse(raw)); }
+      catch { state = defaultState(); save(); }
     } else {
-      state = defaultState();
-      save();
+      state = defaultState(); save();
     }
-
     await ensurePinInit();
     applySoundSetting();
     applyKidMode();
@@ -1555,8 +1449,7 @@ const app = (() => {
   }
 
   function newRound(){
-    locked = false;
-    inputBuf = "";
+    locked = false; inputBuf = "";
     hideFeedback();
     current = genProblem();
     renderProblem();
@@ -1565,228 +1458,122 @@ const app = (() => {
   function check(val){
     if (locked || val === "") return;
     locked = true;
-
-    const correct = (current.type === "cmp")
-      ? String(val) === String(current.ans)
-      : Number(val) === Number(current.ans);
-
+    const correct = (current.type === "cmp") ? String(val) === String(current.ans) : Number(val) === Number(current.ans);
     const sk = state.skills[current.skill] || state.skills.add1;
     const prevTier = getMedalTier(sk.m);
 
     if (correct) {
-      SFX.correct();
-      vibe(18);
-      state.economy.xp += 10;
-      state.economy.streak += 1;
+      SFX.correct(); vibe(18);
+      state.economy.xp += 10; state.economy.streak += 1;
       sk.m = Math.min(0.99, sk.m + 0.05);
-
-      if (state.economy.streak % 5 === 0) {
-        state.economy.coins += 5;
-        toast("Bonus! +5 🪙");
-        vibe(25);
-      }
+      if (state.economy.streak % 5 === 0) { state.economy.coins += 5; toast("Bonus! +5 🪙"); vibe(25); }
     } else {
-      SFX.wrong();
-      vibe(40);
+      SFX.wrong(); vibe(40);
       state.economy.streak = 0;
       sk.m = Math.max(0.05, sk.m - 0.04);
-
       const box = document.getElementById("ansBox");
-      if (box){
-        box.classList.remove("shake");
-        void box.offsetWidth;
-        box.classList.add("shake");
-      }
+      if (box){ box.classList.remove("shake"); void box.offsetWidth; box.classList.add("shake"); }
     }
-
     const newTier = getMedalTier(sk.m);
     if (correct && newTier > prevTier) toast(`Medalie nouă! ${medalIcon(sk.m)}`);
-
     state.skills[current.skill] = sk;
-    save();
-    renderStats();
-    showFeedback(correct);
+    save(); renderStats(); showFeedback(correct);
   }
 
   function makeEasier(){
-    /* PATCH #5 */
-    if (!current) { toast("Începem imediat 🙂"); return; }
+    if (!current) return;
     const sk = state.skills[current.skill];
-    if (sk) {
-      sk.m = Math.max(0.05, sk.m - 0.10);
-      state.skills[current.skill] = sk;
-      save();
-      renderStats();
-    }
-    toast("Mai ușor 🧸");
-    newRound();
+    if (sk) { sk.m = Math.max(0.05, sk.m - 0.10); state.skills[current.skill] = sk; save(); renderStats(); }
+    toast("Mai ușor 🧸"); newRound();
   }
 
   function parentGate(){
     document.getElementById("pinMsg").textContent = "";
     document.getElementById("pinInput").value = "";
-
-    const okDialog = safeOpenDialog("pinDlg");
-    if (okDialog) {
-      setTimeout(()=>document.getElementById("pinInput").focus(), 100);
-      return;
-    }
-
-    const pin = prompt("PIN pentru Dashboard:");
-    if (pin == null) return;
-    verifyPinAndOpen(pin.trim()).catch(()=>alert("PIN incorect."));
+    if (safeOpenDialog("pinDlg")) { setTimeout(()=>document.getElementById("pinInput").focus(), 100); return; }
+    const pin = prompt("PIN:");
+    if (pin!=null) verifyPinAndOpen(pin.trim()).catch(()=>alert("PIN incorect"));
   }
 
   async function verifyPinAndOpen(pin){
     if (!state.security.hash) {
-      if (pin === DEFAULT_PIN) openParent();
-      else throw new Error("bad pin");
+      if (pin === DEFAULT_PIN) openParent(); else throw new Error("bad");
       return;
     }
     const computed = await SEC.hash(pin, state.security.salt);
-    if (computed === state.security.hash) openParent();
-    else throw new Error("bad pin");
+    if (computed === state.security.hash) openParent(); else throw new Error("bad");
   }
 
   function openParent(){
     document.getElementById("stateDump").value = JSON.stringify(state, null, 2);
-    const okDialog = safeOpenDialog("parentDlg");
-    if (!okDialog) alert("Dashboard Părinte indisponibil (browser).");
+    safeOpenDialog("parentDlg");
   }
 
   function resetAll(){
     if (!confirm("Ștergi tot?")) return;
     localStorage.removeItem(KEY_NEW);
     localStorage.removeItem(KEY_OLD);
-    localStorage.removeItem(KEY_LEGACY);
     location.reload();
   }
 
-  function giveCoins(){
-    state.economy.coins += 50;
-    save(); renderStats();
-    toast("+50 🪙");
-  }
-
+  function giveCoins(){ state.economy.coins += 50; save(); renderStats(); toast("+50 🪙"); }
+  
   async function changePin(){
     const p = prompt("PIN Nou (min 4 cifre):");
     if (!p || p.trim().length < 4) return;
     state.security.salt = SEC.salt();
-    try {
-      state.security.hash = await SEC.hash(p.trim(), state.security.salt);
-    } catch {
-      alert("Browserul nu suportă crypto.subtle pentru hash. PIN-ul nu poate fi securizat aici.");
-      state.security.hash = "";
-    }
-    save();
-    toast("PIN schimbat");
+    try { state.security.hash = await SEC.hash(p.trim(), state.security.salt); } catch { state.security.hash = ""; }
+    save(); toast("PIN schimbat");
   }
-
+  
   function exportData(){
     document.getElementById("stateDump").value = JSON.stringify(state, null, 2);
     const blob = new Blob([JSON.stringify(state, null, 2)], { type:"application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = "marclab_plusminus_v2_6.json";
+    a.download = "marclab_v3.json";
     a.click();
   }
-
+  
   function importData(el){
     const f = el.files && el.files[0];
     if (!f) return;
     const r = new FileReader();
     r.onload = (e) => {
-      try {
-        state = normalizeState(JSON.parse(e.target.result));
-        save();
-        location.reload();
-      } catch {
-        alert("Eroare la import (JSON invalid).");
-      }
+      try { state = normalizeState(JSON.parse(e.target.result)); save(); location.reload(); }
+      catch { alert("Eroare JSON."); }
     };
     r.readAsText(f);
   }
 
-  function setLevel(l){
-    state.settings.level = (l === 2) ? 2 : 1;
-    ui.focusSkill = null; ui.focusLeft = 0;
-    save();
-    renderStats();
-    newRound();
-  }
-
-  function toggleSound(){
-    const newVal = SFX.toggle();
-    state.settings.sound = newVal;
-    save();
-    renderStats();
-  }
-
-  function toggleKidMode(){
-    state.settings.kidMode = !state.settings.kidMode;
-    save();
-    applyKidMode();
-    toast(state.settings.kidMode ? "Super Kid ON 🧸" : "Super Kid OFF");
-    renderProblem();
-  }
-
-  function toggleDrawer(forceOpen){
-    const drawer = document.getElementById("drawer");
-    if (!drawer) return;
-
-    const open = (typeof forceOpen === "boolean") ? forceOpen : !ui.drawerOpen;
-    ui.drawerOpen = open;
-
-    drawer.classList.toggle("show", open);
-    drawer.setAttribute("aria-hidden", open ? "false" : "true");
-
-    if (open) renderStats();
+  function setLevel(l){ state.settings.level = (l === 2) ? 2 : 1; ui.focusSkill = null; save(); renderStats(); newRound(); }
+  function toggleSound(){ state.settings.sound = SFX.toggle(); save(); renderStats(); }
+  function toggleKidMode(){ state.settings.kidMode = !state.settings.kidMode; save(); applyKidMode(); toast(state.settings.kidMode ? "Super Kid ON" : "Super Kid OFF"); renderProblem(); }
+  
+  function toggleDrawer(force){
+    const d = document.getElementById("drawer");
+    ui.drawerOpen = (typeof force === "boolean") ? force : !ui.drawerOpen;
+    d.classList.toggle("show", ui.drawerOpen);
+    d.setAttribute("aria-hidden", ui.drawerOpen ? "false" : "true");
+    if (ui.drawerOpen) renderStats();
   }
 
   function setDrawerTab(tab){
     ui.drawerTab = tab;
-    document.getElementById("tabProg").classList.toggle("active", tab === "progress");
-    document.getElementById("tabMap").classList.toggle("active", tab === "map");
-    document.getElementById("tabParent").classList.toggle("active", tab === "parent");
-
+    ["tabProg","tabMap","tabParent"].forEach(id => document.getElementById(id).classList.toggle("active", id.toLowerCase().includes(tab)));
     document.getElementById("drawerProgress").style.display = (tab === "progress") ? "block" : "none";
     document.getElementById("drawerMap").style.display = (tab === "map") ? "block" : "none";
     document.getElementById("drawerParent").style.display = (tab === "parent") ? "block" : "none";
-
-    document.getElementById("drawerTitle").textContent =
-      tab === "progress" ? "⭐ Progres" : (tab === "map" ? "🏅 Harta" : "🔒 Părinte");
-
+    document.getElementById("drawerTitle").textContent = tab === "progress" ? "⭐ Progres" : (tab === "map" ? "🏅 Harta" : "🔒 Părinte");
     renderStats();
   }
 
-  return {
-    init,
-    newRound,
-    check,
-    makeEasier,
-    setLevel,
-    toggleSound,
-    toggleKidMode,
-    parentGate,
-    resetAll,
-    giveCoins,
-    changePin,
-    exportData,
-    importData,
-    toggleDrawer,
-    setDrawerTab,
-    _verifyPinAndOpen: verifyPinAndOpen
-  };
+  return { init, newRound, check, makeEasier, setLevel, toggleSound, toggleKidMode, parentGate, resetAll, giveCoins, changePin, exportData, importData, toggleDrawer, setDrawerTab, _verify: verifyPinAndOpen };
 })();
 
 document.getElementById("pinOk").onclick = async () => {
-  const inp = document.getElementById("pinInput").value.trim();
-  try {
-    await app._verifyPinAndOpen(inp);
-    safeCloseDialog("pinDlg");
-  } catch {
-    document.getElementById("pinMsg").textContent = "PIN incorect";
-  }
+  try { await app._verify(document.getElementById("pinInput").value.trim()); safeCloseDialog("pinDlg"); }
+  catch { document.getElementById("pinMsg").textContent = "PIN incorect"; }
 };
 
 app.init();
