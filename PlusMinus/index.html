@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>MarcLab → PlusMinus (v2.6.1 Stable)</title>
-  <meta name="description" content="MarcLab PlusMinus v2.6.1. Crash-safe recovery (no infinite reload), state normalization, sound state sync, PIN gate." />
+  <title>MarcLab → PlusMinus (v2.8.0 Super Kid)</title>
+  <meta name="description" content="MarcLab PlusMinus v2.8.0 Super Kid: super-kid mode, voice-like prompts (no TTS), level map with medals, full-game mobile drawer, adaptive keypad, math autoscale, stable patches 1–5." />
   <style>
     :root{
       --bg:#0f172a; --card:#1e293b; --line:rgba(255,255,255,.1);
@@ -13,8 +13,35 @@
       --gold:#facc15; --good:#4ade80; --bad:#fb7185; --warn:#fbbf24;
       --shadow:0 12px 30px rgba(0,0,0,.5); --radius:22px;
       --font:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+
+      /* Math auto-scale (set by JS) */
+      --S: 1;
+
+      /* Fluid spacing */
+      --pad: clamp(12px, 2.2vw, 18px);
+      --gap: clamp(10px, 1.8vw, 16px);
+
+      /* Game sizing (scaled) */
+      --pillFs: clamp(12px, calc(13px * var(--S)), 15px);
+      --pillPadY: clamp(9px, calc(10px * var(--S)), 12px);
+      --pillPadX: clamp(12px, calc(14px * var(--S)), 18px);
+
+      --eqFs: clamp(40px, calc(54px * var(--S)), 72px);
+      --eqBoxW: clamp(92px, calc(110px * var(--S)), 140px);
+      --eqBoxH: clamp(70px, calc(86px * var(--S)), 104px);
+
+      --btnFs: clamp(20px, calc(28px * var(--S)), 36px);
+      --btnPad: clamp(14px, calc(18px * var(--S)), 24px);
+      --btnRadius: clamp(14px, calc(16px * var(--S)), 18px);
+
+      --kbdGap: clamp(8px, calc(10px * var(--S)), 12px);
+
+      /* Super-kid rounding defaults (overridden by .kid) */
+      --round: 18px;
     }
-    *{box-sizing:border-box; user-select:none; -webkit-tap-highlight-color:transparent;}
+
+    *{ box-sizing:border-box; user-select:none; -webkit-tap-highlight-color:transparent; }
+
     body{
       margin:0; font-family:var(--font);
       background:
@@ -22,146 +49,619 @@
         radial-gradient(circle at 85% 80%, rgba(56,189,248,.1) 0%, transparent 40%),
         var(--bg);
       color:var(--text);
-      min-height:100vh; display:flex; align-items:stretch; justify-content:center;
-      padding:18px;
+      min-height:100dvh;
+      display:flex; align-items:stretch; justify-content:center;
+      padding:
+        calc(var(--pad) + env(safe-area-inset-top))
+        calc(var(--pad) + env(safe-area-inset-right))
+        calc(var(--pad) + env(safe-area-inset-bottom))
+        calc(var(--pad) + env(safe-area-inset-left));
+      overflow:hidden;
     }
-    .app{width:min(980px,100%); display:flex; flex-direction:column; gap:16px;}
+
+    /* ✅ SUPER KID MODE (body.kid) */
+    body.kid{
+      background:
+        radial-gradient(circle at 20% 12%, rgba(250,204,21,.14) 0%, transparent 45%),
+        radial-gradient(circle at 80% 78%, rgba(74,222,128,.12) 0%, transparent 45%),
+        radial-gradient(circle at 50% 40%, rgba(56,189,248,.10) 0%, transparent 55%),
+        var(--bg);
+      --round: 26px;
+    }
+
+    .app{
+      width:min(980px,100%);
+      height:100%;
+      display:flex;
+      flex-direction:column;
+      gap:var(--gap);
+      min-height:0;
+    }
+
+    /* TOP BAR */
     .top{
       display:flex; gap:12px; flex-wrap:wrap; align-items:center; justify-content:space-between;
-      background:rgba(30,41,59,.6); backdrop-filter:blur(10px);
-      padding:12px 16px; border-radius:var(--radius); border:1px solid var(--line);
+      background:rgba(30,41,59,.62);
+      backdrop-filter:blur(10px);
+      padding:12px 16px;
+      border-radius:var(--radius);
+      border:1px solid var(--line);
     }
-    .brand b{font-size:18px; color:var(--accent); letter-spacing:-.02em;}
-    .brand span{font-size:12px; color:var(--muted); display:block;}
-    .controls{display:flex; gap:8px; align-items:center;}
-    .pill-btn{
-      background:rgba(255,255,255,.05); border:1px solid var(--line); color:var(--muted);
-      padding:8px 14px; border-radius:99px; font-size:13px; font-weight:700; cursor:pointer;
+    body.kid .top{
+      background:rgba(30,41,59,.72);
+      border-color:rgba(255,255,255,.13);
     }
-    .pill-btn.active{background:var(--accent); color:#0f172a; border-color:var(--accent);}
-    .stats{display:flex; gap:10px; align-items:center;}
-    .stat{
-      padding:6px 12px; background:rgba(0,0,0,.3); border-radius:99px; border:1px solid var(--line);
-      font-size:13px; font-weight:700; display:flex; gap:6px; align-items:center;
-    }
-    .stat.gold{color:var(--gold); border-color:rgba(250,204,21,.2);}
 
-    .main{display:grid; grid-template-columns:1.3fr .7fr; gap:16px;}
-    @media(max-width:880px){.main{grid-template-columns:1fr;}}
+    .brand b{
+      font-size:18px;
+      color:var(--accent);
+      letter-spacing:-.02em;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .brand span{font-size:12px; color:var(--muted); display:block;}
+
+    .controls{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+
+    .pill-btn{
+      background:rgba(255,255,255,.05);
+      border:1px solid var(--line);
+      color:var(--muted);
+      padding:var(--pillPadY) var(--pillPadX);
+      border-radius:999px;
+      font-size:var(--pillFs);
+      font-weight:1000;
+      cursor:pointer;
+      touch-action:manipulation;
+      white-space:nowrap;
+      transition:transform .08s ease;
+    }
+    .pill-btn:active{ transform:scale(.98); }
+
+    .pill-btn.active{ background:var(--accent); color:#0f172a; border-color:var(--accent); }
+    .pill-btn.primary{ background:rgba(250,204,21,.12); border-color:rgba(250,204,21,.35); color:var(--gold); }
+    .pill-btn.kidToggle{ background:rgba(124,58,237,.14); border-color:rgba(124,58,237,.35); color:#ddd6fe; }
+
+    body.kid .pill-btn{
+      border-radius:999px;
+      background:rgba(255,255,255,.07);
+    }
+
+    .stats{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .stat{
+      padding:6px 12px;
+      background:rgba(0,0,0,.3);
+      border-radius:999px;
+      border:1px solid var(--line);
+      font-size:13px;
+      font-weight:1000;
+      display:flex;
+      gap:6px;
+      align-items:center;
+    }
+    .stat.gold{ color:var(--gold); border-color:rgba(250,204,21,.2); }
+
+    /* LAYOUT */
+    .main{
+      flex:1; min-height:0;
+      display:grid;
+      grid-template-columns:1.25fr .75fr;
+      gap:var(--gap);
+    }
+    @media(max-width: 900px){
+      .main{ grid-template-columns:1fr; }
+      .side{ display:none !important; }
+    }
 
     .card{
-      background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
-      box-shadow:var(--shadow); padding:20px; position:relative; overflow:hidden;
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:clamp(16px, 2.4vw, 20px);
+      position:relative;
+      overflow:hidden;
+      min-height:0;
     }
-    .prompt{display:flex; flex-direction:column; gap:16px; min-height:480px; justify-content:space-between;}
+    body.kid .card{
+      border-color:rgba(255,255,255,.13);
+      box-shadow: 0 16px 50px rgba(0,0,0,.55);
+    }
 
-    .problem-header{display:flex; justify-content:space-between; align-items:center;}
-    .h-text{font-size:13px; font-weight:700; text-transform:uppercase; color:var(--muted); letter-spacing:1px;}
+    /* GAME CARD */
+    .prompt{
+      display:flex;
+      flex-direction:column;
+      gap:clamp(10px, 1.5vw, 16px);
+      height:100%;
+      min-height:0;
+      justify-content:space-between;
+    }
+
+    .problem-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+    }
+    .h-text{
+      font-size:13px;
+      font-weight:1000;
+      text-transform:uppercase;
+      color:var(--muted);
+      letter-spacing:1px;
+    }
+
+    .btn-ghost{
+      background:transparent;
+      border:none;
+      color:var(--muted);
+      font-weight:1000;
+      cursor:pointer;
+      padding:10px 10px;
+      border-radius:12px;
+      touch-action:manipulation;
+    }
+    .btn-ghost:active{ background:rgba(255,255,255,.06); }
+
+    /* Voice-like prompt bubble */
+    .bubble{
+      align-self:center;
+      max-width:min(520px, 92%);
+      background:rgba(0,0,0,.22);
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:999px;
+      padding:10px 16px;
+      font-weight:1000;
+      color:#e2e8f0;
+      text-align:center;
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+      transform-origin:center;
+      animation:bubbleIn .16s ease-out both;
+    }
+    body.kid .bubble{
+      background:linear-gradient(180deg, rgba(56,189,248,.14), rgba(0,0,0,.20));
+      border-color:rgba(56,189,248,.25);
+      border-radius:999px;
+    }
+    .bubble small{ color:var(--muted); font-weight:900; }
+
     .problem-body{
-      flex-grow:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
-      gap:10px; min-height:120px;
+      flex:1; min-height:0;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:12px;
+      padding:6px 0;
     }
 
     /* Visuals */
-    .viz-area{display:flex; justify-content:center; gap:20px; margin-bottom:10px; min-height:50px;}
-    .ten-frame{
-      display:grid; grid-template-columns:repeat(5,1fr); grid-template-rows:repeat(2,1fr);
-      gap:6px; padding:8px; border:2px solid var(--muted); border-radius:10px; background:rgba(0,0,0,.2);
+    .viz-area{
+      display:flex;
+      justify-content:center;
+      gap:18px;
+      margin-bottom:6px;
+      min-height:50px;
+      flex-wrap:wrap;
     }
-    .tf-dot{width:16px; height:16px; border-radius:50%; border:1px dashed rgba(255,255,255,.1);}
-    .tf-dot.filled{background:var(--good); border:none; box-shadow:0 0 8px var(--good);}
+    .ten-frame{
+      display:grid;
+      grid-template-columns:repeat(5,1fr);
+      grid-template-rows:repeat(2,1fr);
+      gap:6px;
+      padding:8px;
+      border:2px solid var(--muted);
+      border-radius:12px;
+      background:rgba(0,0,0,.2);
+    }
+    body.kid .ten-frame{ border-radius:16px; border-color:rgba(250,204,21,.35); }
 
-    .dot-group{display:flex; gap:6px; flex-wrap:wrap; max-width:80px; justify-content:center; align-content:center;}
-    .d-pt{width:12px; height:12px; background:var(--accent); border-radius:50%; opacity:.9; box-shadow:0 0 6px var(--accent-dim);}
+    .tf-dot{
+      width:16px; height:16px;
+      border-radius:50%;
+      border:1px dashed rgba(255,255,255,.12);
+    }
+    .tf-dot.filled{
+      background:var(--good);
+      border:none;
+      box-shadow:0 0 10px rgba(74,222,128,.55);
+    }
+
+    .dot-group{
+      display:flex;
+      gap:6px;
+      flex-wrap:wrap;
+      max-width:96px;
+      justify-content:center;
+      align-content:center;
+    }
+    .d-pt{
+      width:12px; height:12px;
+      background:var(--accent);
+      border-radius:50%;
+      opacity:.92;
+      box-shadow:0 0 8px rgba(56,189,248,.22);
+    }
 
     .big-eq{
-      font-size:56px; font-weight:900; line-height:1.1;
-      display:flex; align-items:center; gap:14px; flex-wrap:wrap; justify-content:center;
-      text-shadow:0 4px 20px rgba(0,0,0,.5);
+      font-size:var(--eqFs);
+      font-weight:1000;
+      line-height:1.05;
+      display:flex;
+      align-items:center;
+      gap:14px;
+      flex-wrap:wrap;
+      justify-content:center;
+      text-shadow:0 6px 22px rgba(0,0,0,.55);
+      text-align:center;
     }
+
     .eqBox{
-      min-width:100px; height:86px; padding:0 20px;
-      border-radius:18px; border:2px solid rgba(255,255,255,.2);
-      background:rgba(0,0,0,.3); color:var(--accent);
-      display:flex; align-items:center; justify-content:center;
+      min-width:var(--eqBoxW);
+      height:var(--eqBoxH);
+      padding:0 20px;
+      border-radius:18px;
+      border:2px solid rgba(255,255,255,.22);
+      background:rgba(0,0,0,.32);
+      color:var(--accent);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      position:relative;
     }
-    .eqBox.filled{border-color:var(--accent); background:var(--accent-dim);}
+    body.kid .eqBox{
+      border-radius:24px;
+      border-color:rgba(56,189,248,.28);
+      background:linear-gradient(180deg, rgba(56,189,248,.10), rgba(0,0,0,.26));
+    }
+    .eqBox.filled{ border-color:var(--accent); background:rgba(56,189,248,.14); }
 
     /* Keypad */
-    .kbd{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; max-width:400px; width:100%; margin:0 auto;}
+    .kbd{
+      width:100%;
+      max-width:520px;
+      margin:0 auto;
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:var(--kbdGap);
+      padding-bottom:4px;
+    }
+    .kbd.wide{ grid-template-columns:repeat(5,1fr); max-width:760px; }
+    .kbd.cmp{ grid-template-columns:repeat(3,1fr) !important; max-width:460px; }
+
     .btn{
-      border:1px solid var(--line); background:rgba(255,255,255,.05); color:var(--text);
-      padding:16px; border-radius:16px; font-size:24px; font-weight:700; cursor:pointer;
-      box-shadow:0 4px 0 rgba(0,0,0,.3); transition:transform .1s;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.06);
+      color:var(--text);
+      padding:var(--btnPad);
+      border-radius:var(--btnRadius);
+      font-size:var(--btnFs);
+      font-weight:1000;
+      cursor:pointer;
+      box-shadow:0 4px 0 rgba(0,0,0,.3);
+      transition:transform .08s, filter .08s;
+      touch-action:manipulation;
     }
-    .btn:active{transform:translateY(4px); box-shadow:none;}
-    .btn.small{font-size:16px; padding:12px;}
-    .btn.warn{background:rgba(251,191,36,.15); border-color:rgba(251,191,36,.3); color:var(--warn);}
-    .btn.primary{background:var(--accent-dim); border-color:var(--accent); color:var(--accent);}
-    .btn.ghost{background:transparent; border:none; box-shadow:none; color:var(--muted); font-size:14px;}
+    .btn:active{ transform:translateY(4px); box-shadow:none; }
+    .btn:hover{ filter:brightness(1.04); }
 
-    /* Feedback */
+    body.kid .btn{
+      border-radius: calc(var(--round) + 4px);
+      background:linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.04));
+      border-color:rgba(255,255,255,.13);
+      box-shadow:0 8px 0 rgba(0,0,0,.28);
+    }
+    body.kid .btn:active{ transform:translateY(6px); box-shadow:none; }
+
+    .btn.small{ font-size:clamp(14px, calc(16px * var(--S)), 18px); padding:12px; }
+    .btn.warn{ background:rgba(251,191,36,.15); border-color:rgba(251,191,36,.3); color:var(--warn); }
+    .btn.primary{ background:rgba(56,189,248,.14); border-color:rgba(56,189,248,.35); color:var(--accent); }
+    .btn.good{ background:rgba(74,222,128,.14); border-color:rgba(74,222,128,.35); color:var(--good); }
+
+    .btn.span2{ grid-column:span 2; }
+    .btn.span3{ grid-column:span 3; }
+
+    /* Feedback overlay */
     .feedback{
-      position:absolute; inset:0; background:rgba(15,23,42,.95); backdrop-filter:blur(8px);
-      display:none; flex-direction:column; align-items:center; justify-content:center; gap:10px; z-index:10;
+      position:absolute;
+      inset:0;
+      background:rgba(15,23,42,.94);
+      backdrop-filter:blur(10px);
+      display:none;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      z-index:10;
+      padding:var(--pad);
+      text-align:center;
     }
+    .feedback.show{ display:flex; }
+    #fbIcon{ font-size:72px; animation:pop .22s ease-out both; }
+    #fbTitle{ font-size:clamp(22px, calc(26px * var(--S)), 34px); font-weight:1000; }
+    #fbSub{ color:var(--muted); font-weight:1000; font-size:clamp(13px, calc(14px * var(--S)), 16px); }
+
     .btn-next{
-      margin-top:20px; background:var(--good); color:#064e3b; border:none;
-      padding:14px 40px; font-size:20px; font-weight:800; border-radius:99px; cursor:pointer;
-      box-shadow:0 0 20px rgba(74,222,128,.4);
+      margin-top:18px;
+      border:none;
+      padding:14px 44px;
+      font-size:clamp(18px, calc(20px * var(--S)), 26px);
+      font-weight:1000;
+      border-radius:999px;
+      cursor:pointer;
+      box-shadow:0 0 22px rgba(74,222,128,.35);
+      touch-action:manipulation;
     }
 
-    /* Side */
-    .skill-item{padding:10px 0; border-bottom:1px solid var(--line);}
-    .skill-top{display:flex; justify-content:space-between; font-size:13px; font-weight:700; margin-bottom:6px;}
-    .meter{height:6px; background:rgba(255,255,255,.1); border-radius:99px; overflow:hidden;}
-    .fill{height:100%; background:var(--accent); transition:width .5s;}
+    #confetti{
+      position:absolute; inset:0;
+      width:100%; height:100%;
+      pointer-events:none;
+      opacity:.9;
+    }
+
+    /* Side panel (desktop) */
+    .side{ display:flex; flex-direction:column; gap:var(--gap); min-height:0; }
+    .skill-item{ padding:10px 0; border-bottom:1px solid var(--line); }
+    .skill-top{ display:flex; justify-content:space-between; font-size:13px; font-weight:1000; margin-bottom:6px; gap:10px; }
+    .meter{ height:6px; background:rgba(255,255,255,.1); border-radius:999px; overflow:hidden; }
+    .fill{ height:100%; background:var(--accent); transition:width .35s; }
 
     /* Dialogs */
     dialog{
-      background:var(--card); color:var(--text); border:1px solid var(--line);
-      border-radius:20px; padding:24px; width:min(500px,90vw);
+      background:var(--card);
+      color:var(--text);
+      border:1px solid var(--line);
+      border-radius:20px;
+      padding:24px;
+      width:min(520px,90vw);
       box-shadow:0 20px 60px rgba(0,0,0,.8);
     }
-    dialog::backdrop{background:rgba(0,0,0,.7); backdrop-filter:blur(4px);}
+    dialog::backdrop{ background:rgba(0,0,0,.7); backdrop-filter:blur(4px); }
+
     .pinInput{
-      width:100%; background:rgba(0,0,0,.3); border:1px solid var(--line); color:#fff;
-      padding:14px; font-size:24px; letter-spacing:.5em; text-align:center; border-radius:12px; margin:16px 0;
+      width:100%;
+      background:rgba(0,0,0,.3);
+      border:1px solid var(--line);
+      color:#fff;
+      padding:14px;
+      font-size:24px;
+      letter-spacing:.5em;
+      text-align:center;
+      border-radius:12px;
+      margin:16px 0;
       font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     }
     textarea{
-      width:100%; background:rgba(0,0,0,.3); border:1px solid var(--line); color:var(--muted);
-      border-radius:12px; min-height:100px; padding:10px; font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      width:100%;
+      background:rgba(0,0,0,.3);
+      border:1px solid var(--line);
+      color:var(--muted);
+      border-radius:12px;
+      min-height:120px;
+      padding:10px;
+      font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     }
 
     /* Toast */
     .toast{
-      position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
-      background:var(--gold); color:#422006; font-weight:800;
-      padding:10px 24px; border-radius:99px; z-index:100;
-      box-shadow:0 10px 30px rgba(250,204,21,.4);
+      position:fixed;
+      bottom:calc(18px + env(safe-area-inset-bottom));
+      left:50%;
+      transform:translateX(-50%);
+      background:var(--gold);
+      color:#422006;
+      font-weight:1000;
+      padding:10px 22px;
+      border-radius:999px;
+      z-index:100;
+      box-shadow:0 10px 30px rgba(250,204,21,.35);
       display:none;
+      max-width:min(92vw, 520px);
+      text-align:center;
+    }
+
+    /* Drawer */
+    .drawer{
+      position:fixed;
+      inset:0;
+      display:none;
+      z-index:200;
+    }
+    .drawer.show{ display:block; }
+
+    .drawer .backdrop{
+      position:absolute;
+      inset:0;
+      background:rgba(0,0,0,.62);
+      backdrop-filter:blur(4px);
+    }
+
+    .drawer .panel{
+      position:absolute;
+      right:0; top:0;
+      height:100%;
+      width:min(560px, 92vw);
+      background:rgba(30,41,59,.92);
+      border-left:1px solid var(--line);
+      box-shadow:0 20px 80px rgba(0,0,0,.8);
+      padding:16px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      animation:slideIn .18s ease-out both;
+    }
+
+    .drawerHeader{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .drawerHeader b{ font-size:16px; font-weight:1000; color:var(--gold); }
+    .drawerClose{
+      background:rgba(255,255,255,.08);
+      border:1px solid var(--line);
+      color:var(--text);
+      font-weight:1000;
+      border-radius:12px;
+      padding:10px 12px;
+      cursor:pointer;
+      touch-action:manipulation;
+    }
+
+    .drawerTabs{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .tabBtn{
+      background:rgba(255,255,255,.07);
+      border:1px solid var(--line);
+      color:var(--text);
+      font-weight:1000;
+      border-radius:999px;
+      padding:10px 14px;
+      cursor:pointer;
+      touch-action:manipulation;
+    }
+    .tabBtn.active{ background:rgba(56,189,248,.16); border-color:rgba(56,189,248,.35); color:var(--accent); }
+
+    .drawerCard{
+      background:rgba(0,0,0,.18);
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:14px;
+      min-height:0;
+      overflow:auto;
+    }
+
+    /* Level map cards */
+    .mapGrid{
+      display:grid;
+      grid-template-columns:repeat(2, 1fr);
+      gap:10px;
+    }
+    @media(min-width:520px){
+      .mapGrid{ grid-template-columns:repeat(3, 1fr); }
+    }
+    .mapTile{
+      background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:18px;
+      padding:12px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      min-height:118px;
+    }
+    body.kid .mapTile{
+      border-radius:24px;
+      background:linear-gradient(180deg, rgba(255,255,255,.09), rgba(0,0,0,.12));
+    }
+    .mapTop{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:8px;
+    }
+    .mapName{
+      font-weight:1000;
+      font-size:13px;
+      color:#e2e8f0;
+      line-height:1.15;
+    }
+    .medal{
+      font-size:22px;
+      filter: drop-shadow(0 8px 18px rgba(0,0,0,.35));
+    }
+    .mapPct{
+      font-weight:1000;
+      color:var(--muted);
+      font-size:12px;
+    }
+    .mapBar{
+      height:8px;
+      border-radius:999px;
+      background:rgba(255,255,255,.08);
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,.08);
+    }
+    .mapFill{
+      height:100%;
+      width:0%;
+      background:var(--accent);
+      transition:width .35s;
+    }
+    .mapActions{
+      margin-top:auto;
+      display:flex;
+      gap:8px;
+    }
+    .miniBtn{
+      flex:1;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.06);
+      color:var(--text);
+      font-weight:1000;
+      padding:10px 10px;
+      cursor:pointer;
+      touch-action:manipulation;
+      font-size:12px;
+    }
+    .miniBtn.focus{ background:rgba(74,222,128,.14); border-color:rgba(74,222,128,.30); color:var(--good); }
+    .miniBtn:active{ transform:scale(.98); }
+
+    /* PATCH #1: allow selection in inputs/textarea */
+    textarea, input, .pinInput { user-select:text; -webkit-user-select:text; }
+
+    /* Animations */
+    @keyframes pop{ 0%{transform:scale(.82); opacity:0;} 60%{transform:scale(1.08); opacity:1;} 100%{transform:scale(1); opacity:1;} }
+    @keyframes shake{
+      0%,100%{transform:translateX(0);}
+      20%{transform:translateX(-8px);}
+      40%{transform:translateX(8px);}
+      60%{transform:translateX(-6px);}
+      80%{transform:translateX(6px);}
+    }
+    .shake{ animation:shake .28s ease-in-out; }
+    @keyframes slideIn{ from{transform:translateX(22px); opacity:0;} to{transform:translateX(0); opacity:1;} }
+    @keyframes bubbleIn{ from{transform:scale(.96); opacity:.0;} to{transform:scale(1); opacity:1;} }
+
+    @media(max-width:520px){
+      .top{ padding:10px 12px; }
+      .brand b{ font-size:16px; }
+      .brand span{ font-size:11px; }
+      .stat{ font-size:12px; }
+      .dot-group{ max-width:82px; }
     }
   </style>
 </head>
+
 <body>
   <div class="app">
     <div class="top">
       <div class="brand">
-        <b>MarcLab → PlusMinus</b>
-        <span>v2.6.1 Stable • anti-crash + state normalize</span>
+        <b>🧠 MarcLab → PlusMinus</b>
+        <span>v2.8.0 Super Kid • prompts + level map + medals 🏅</span>
       </div>
 
       <div class="controls">
         <button class="pill-btn active" id="btnLvl1" onclick="app.setLevel(1)">L1: 1–10</button>
         <button class="pill-btn" id="btnLvl2" onclick="app.setLevel(2)">L2: 10–20</button>
         <button class="pill-btn" onclick="app.toggleSound()" id="btnSound">🔊</button>
+        <button class="pill-btn kidToggle" onclick="app.toggleKidMode()" id="btnKid">🧸 Super</button>
+        <button class="pill-btn primary" onclick="app.toggleDrawer(true)" id="btnProgress">Progres ⭐</button>
       </div>
 
       <div class="stats">
         <div class="stat">XP <span id="uiXp">0</span></div>
         <div class="stat gold">🪙 <span id="uiCoins">0</span></div>
         <div class="stat">🔥 <span id="uiStreak">0</span></div>
+        <div class="stat">🏅 <span id="uiMedals">0</span></div>
       </div>
     </div>
 
@@ -169,25 +669,29 @@
       <div class="card prompt">
         <div class="problem-header">
           <div class="h-text" id="uiSkillName">ÎNCĂRCARE...</div>
-          <button class="btn ghost" onclick="app.makeEasier()">Prea greu?</button>
+          <button class="btn-ghost" onclick="app.makeEasier()">Prea greu? 🧸</button>
         </div>
 
-        <div class="problem-body" id="uiProblem"></div>
+        <div class="problem-body" id="uiProblem">
+          <!-- bubble + problem injected here -->
+        </div>
 
         <div class="kbd" id="kbd"></div>
 
         <div class="feedback" id="uiFeedback">
-          <div id="fbIcon" style="font-size:64px">⭐</div>
-          <div id="fbTitle" style="font-size:24px; font-weight:800">Corect!</div>
-          <div id="fbSub" style="color:var(--muted)">+10 XP</div>
-          <button class="btn-next" onclick="app.newRound()" id="btnNext">Următorul</button>
+          <canvas id="confetti"></canvas>
+          <div id="fbIcon">⭐</div>
+          <div id="fbTitle">Bravo!</div>
+          <div id="fbSub">+10 XP</div>
+          <button class="btn-next" onclick="app.newRound()" id="btnNext">Continuă</button>
         </div>
       </div>
 
-      <div style="display:flex; flex-direction:column; gap:16px;">
+      <!-- Desktop side panel -->
+      <div class="side">
         <div class="card">
           <div class="h-text" style="margin-bottom:12px">Abilități (Adaptiv)</div>
-          <div id="uiSkills"></div>
+          <div id="uiSkillsSide"></div>
         </div>
 
         <div class="card">
@@ -198,13 +702,60 @@
     </div>
   </div>
 
+  <!-- Drawer -->
+  <div class="drawer" id="drawer" aria-hidden="true">
+    <div class="backdrop" onclick="app.toggleDrawer(false)"></div>
+
+    <div class="panel">
+      <div class="drawerHeader">
+        <b id="drawerTitle">⭐ Progres</b>
+        <button class="drawerClose" onclick="app.toggleDrawer(false)">✕</button>
+      </div>
+
+      <div class="drawerTabs">
+        <button class="tabBtn active" id="tabProg" onclick="app.setDrawerTab('progress')">Progres</button>
+        <button class="tabBtn" id="tabMap" onclick="app.setDrawerTab('map')">Harta 🏅</button>
+        <button class="tabBtn" id="tabParent" onclick="app.setDrawerTab('parent')">Părinte 🔒</button>
+      </div>
+
+      <!-- PROGRESS -->
+      <div class="drawerCard" id="drawerProgress">
+        <div class="h-text" style="margin-bottom:10px">Statistici</div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
+          <div class="stat">XP <span id="uiXp2">0</span></div>
+          <div class="stat gold">🪙 <span id="uiCoins2">0</span></div>
+          <div class="stat">🔥 <span id="uiStreak2">0</span></div>
+          <div class="stat">🏅 <span id="uiMedals2">0</span></div>
+        </div>
+
+        <div class="h-text" style="margin:8px 0 10px;">Abilități</div>
+        <div id="uiSkillsDrawer"></div>
+      </div>
+
+      <!-- MAP -->
+      <div class="drawerCard" id="drawerMap" style="display:none;">
+        <div class="h-text" style="margin-bottom:10px">Harta nivelului (apasă o abilitate)</div>
+        <div class="mapGrid" id="uiMap"></div>
+        <div style="margin-top:12px; color:var(--muted); font-weight:900; font-size:12px;">
+          Medalii: 🥉 ≥55% • 🥈 ≥75% • 🥇 ≥90%
+        </div>
+      </div>
+
+      <!-- PARENT -->
+      <div class="drawerCard" id="drawerParent" style="display:none;">
+        <div class="h-text" style="margin-bottom:12px">Control Părinte</div>
+        <button class="btn small primary" style="width:100%" onclick="app.parentGate()">Dashboard 🔒</button>
+      </div>
+    </div>
+  </div>
+
   <div class="toast" id="toast">Notificare</div>
 
   <dialog id="pinDlg">
     <h3>Introducere PIN</h3>
     <p style="color:var(--muted); margin:0">Pentru a accesa setările.</p>
     <input id="pinInput" class="pinInput" type="password" inputmode="numeric" maxlength="8" placeholder="••••" />
-    <div id="pinMsg" style="color:var(--bad); font-weight:700; height:20px; font-size:13px"></div>
+    <div id="pinMsg" style="color:var(--bad); font-weight:1000; height:20px; font-size:13px"></div>
     <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:10px">
       <button class="btn small" onclick="safeCloseDialog('pinDlg')">Anulează</button>
       <button class="btn small primary" id="pinOk">Confirmă</button>
@@ -232,15 +783,22 @@
 
 <script>
 /**
- * MarcLab → PlusMinus v2.6.1 Stable
- * Fixuri incluse:
- *  - NU mai există renderSkills() (totul e randat în renderStats()) ✅
- *  - Recovery handler: NU face loop infinit, NU dă localStorage.clear() ✅
- *  - Normalizare/merge de state (nu "state = s" direct) ✅
- *  - Sound saved state aplicat corect la init ✅
- *  - Migrare din key vechi v2-3 -> v2-6 (fără să pierzi progresul) ✅
+ * MarcLab → PlusMinus v2.8.0 Super Kid
+ * ✅ Patches 1–5 retained:
+ *  1) user-select for input/textarea
+ *  2) robust safeOpenDialog
+ *  3) safe save (storage blocked)
+ *  4) iOS AudioContext resume
+ *  5) makeEasier guard if current null
+ *
+ * ✅ New:
+ *  - Super Kid mode (rounded, bouncy, brighter) persisted in settings
+ *  - Voice-like prompts (no TTS) in a speech bubble
+ *  - Level map with medals 🥉🥈🥇 and "Focus" practice from map
+ *  - Medal upgrade toast when crossing thresholds
  */
 
+/* Recovery guards (anti-loop) */
 (function setupRecoveryGuards(){
   function recover(reason){
     try {
@@ -254,23 +812,26 @@
         return;
       }
       sessionStorage.setItem(onceKey, "1");
-
-      // Ștergem DOAR cheile modulului (nu tot localStorage)
       localStorage.removeItem("marclab-plusminus-v2-6");
       localStorage.removeItem("marclab-plusminus-v2-3");
       localStorage.removeItem("marclab-plusminus-l1-v1");
     } catch {}
     location.reload();
   }
-
   window.addEventListener("error", (e) => recover(e.error || e.message));
   window.addEventListener("unhandledrejection", (e) => recover(e.reason));
 })();
 
+/* PATCH #2: robust dialogs */
 function safeOpenDialog(id){
   const dlg = document.getElementById(id);
   if (!dlg) return false;
-  if (typeof dlg.showModal === "function") { dlg.showModal(); return true; }
+  try {
+    if (dlg.open) return true;
+    if (typeof dlg.showModal === "function") { dlg.showModal(); return true; }
+  } catch (e) {
+    console.warn("Dialog open failed:", e);
+  }
   return false;
 }
 function safeCloseDialog(id){
@@ -279,12 +840,15 @@ function safeCloseDialog(id){
   if (typeof dlg.close === "function") dlg.close();
 }
 
+/* SFX */
 const SFX = (() => {
   let ctx = null;
   let enabled = true;
 
   function init(){
     if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+    /* PATCH #4 */
+    if (ctx && ctx.state === "suspended") ctx.resume().catch(()=>{});
   }
   function play(freq, type, dur, vol=0.1){
     if (!enabled) return;
@@ -304,33 +868,118 @@ const SFX = (() => {
     isEnabled: () => enabled,
     setEnabled: (v) => { enabled = !!v; return enabled; },
     toggle: () => { enabled = !enabled; return enabled; },
-    correct: () => { play(523,'sine',0.1); setTimeout(()=>play(784,'sine',0.3),100); },
-    wrong: () => { play(150,'sawtooth',0.3,0.2); setTimeout(()=>play(120,'sawtooth',0.3,0.2),150); },
-    click: () => { play(800,'sine',0.05,0.03); }
+    correct: () => { play(523,'sine',0.08); setTimeout(()=>play(784,'sine',0.22),90); },
+    wrong: () => { play(160,'sawtooth',0.22,0.2); setTimeout(()=>play(120,'sawtooth',0.22,0.2),120); },
+    click: () => { play(820,'sine',0.045,0.03); }
   };
 })();
 
+/* PIN hashing */
 const SEC = {
   salt: () => Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b=>b.toString(16).padStart(2,'0')).join(''),
   hash: async (pin, salt) => {
-    // Dacă crypto.subtle nu există, nu putem garanta hashing sigur.
-    // În practică, Safari/Chrome moderne au crypto.subtle.
     if (!crypto || !crypto.subtle) throw new Error("crypto.subtle unavailable");
     const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pin + ":" + salt));
     return Array.from(new Uint8Array(buf)).map(x=>x.toString(16).padStart(2,'0')).join('');
   }
 };
 
+/* Lightweight confetti */
+const Confetti = (() => {
+  let raf = 0;
+  let parts = [];
+  let start = 0;
+
+  function burst(){
+    const c = document.getElementById("confetti");
+    if (!c) return;
+    const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+    const rect = c.getBoundingClientRect();
+    c.width = Math.floor(rect.width * dpr);
+    c.height = Math.floor(rect.height * dpr);
+
+    const ctx = c.getContext("2d");
+    if (!ctx) return;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+
+    const w = rect.width, h = rect.height;
+    const n = Math.round(70 + 40 * Math.random());
+    parts = [];
+    start = performance.now();
+
+    for (let i=0;i<n;i++){
+      const x = w * 0.5 + (Math.random()-0.5) * 60;
+      const y = h * 0.45 + (Math.random()-0.5) * 30;
+      const a = Math.random() * Math.PI * 2;
+      const sp = 5 + Math.random() * 7;
+      parts.push({
+        x, y,
+        vx: Math.cos(a) * sp,
+        vy: Math.sin(a) * sp - 6,
+        g: 0.28 + Math.random() * 0.22,
+        r: 3 + Math.random() * 4,
+        o: 1,
+        rot: Math.random() * Math.PI,
+        vr: (Math.random()-0.5) * 0.25
+      });
+    }
+
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(t => tick(t, ctx, w, h));
+  }
+
+  function tick(t, ctx, w, h){
+    ctx.clearRect(0,0,w,h);
+    for (const p of parts){
+      p.vy += p.g;
+      p.x += p.vx;
+      p.y += p.vy;
+      p.rot += p.vr;
+      p.o *= 0.985;
+      if (p.y > h + 30) p.o = 0;
+
+      if (p.o > 0.04){
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, Math.min(1, p.o));
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        const pick = Math.random();
+        ctx.fillStyle = pick < 0.33 ? "rgba(56,189,248,.95)" : (pick < 0.66 ? "rgba(250,204,21,.95)" : "rgba(74,222,128,.95)");
+        ctx.fillRect(-p.r, -p.r*0.6, p.r*2, p.r*1.2);
+        ctx.restore();
+      }
+    }
+    const alive = parts.some(p => p.o > 0.04);
+    if (alive) raf = requestAnimationFrame(tt => tick(tt, ctx, w, h));
+    else ctx.clearRect(0,0,w,h);
+  }
+
+  return { burst };
+})();
+
+/* APP */
 const app = (() => {
   const KEY_NEW = "marclab-plusminus-v2-6";
   const KEY_OLD = "marclab-plusminus-v2-3";
   const KEY_LEGACY = "marclab-plusminus-l1-v1";
   const DEFAULT_PIN = "2580";
 
+  const ui = {
+    wideKeypad: false,
+    drawerOpen: false,
+    drawerTab: "progress",
+    focusSkill: null,     // selected from map (session only)
+    focusLeft: 0
+  };
+
   function defaultState(){
     return {
-      meta: { ver: 2.61, app: "PlusMinus" },
-      settings: { level: 1, sound: true },
+      meta: { ver: 2.80, app: "PlusMinus" },
+      settings: {
+        level: 1,
+        sound: true,
+        kidMode: true   // default ON for v2.8
+      },
       security: { salt: "", hash: "" },
       economy: { xp: 0, coins: 0, streak: 0, level: 1 },
       skills: {
@@ -347,7 +996,6 @@ const app = (() => {
     };
   }
 
-  // Normalize + deep-merge (anti-corruption)
   function normalizeState(input){
     const d = defaultState();
     const s = (input && typeof input === "object") ? input : {};
@@ -362,11 +1010,10 @@ const app = (() => {
       history: Array.isArray(s.history) ? s.history : d.history
     };
 
-    // basic validation
     out.settings.level = (out.settings.level === 2) ? 2 : 1;
     out.settings.sound = (out.settings.sound !== false);
+    out.settings.kidMode = (out.settings.kidMode !== false);
 
-    // clamp masteries
     for (const k of Object.keys(out.skills)) {
       const sk = out.skills[k];
       if (!sk || typeof sk !== "object") continue;
@@ -375,7 +1022,6 @@ const app = (() => {
       if (typeof sk.n !== "string") sk.n = d.skills[k]?.n ?? "Skill";
       if (typeof sk.l !== "number") sk.l = d.skills[k]?.l ?? 1;
     }
-
     return out;
   }
 
@@ -394,9 +1040,13 @@ const app = (() => {
     setTimeout(()=>{ t.style.display = "none"; }, 2000);
   }
 
+  function vibe(ms){
+    try { if (navigator.vibrate) navigator.vibrate(ms); } catch {}
+  }
+
   function writeLegacySummary(){
     const summary = {
-      meta: { brand:"MarcLab", module:"PlusMinus", version:"2.6.1", updatedAt: Date.now() },
+      meta: { brand:"MarcLab", module:"PlusMinus", version:"2.8.0", updatedAt: Date.now() },
       economy: { xp: state.economy.xp, coins: state.economy.coins, streak: state.economy.streak, level: state.economy.level },
       skills: {
         add: { name:"Adunări", level:1, mastery: state.skills.add1?.m || 0 },
@@ -407,13 +1057,14 @@ const app = (() => {
     localStorage.setItem(KEY_LEGACY, JSON.stringify(summary));
   }
 
+  /* PATCH #3: safe save */
   function save(){
-    localStorage.setItem(KEY_NEW, JSON.stringify(state));
-    writeLegacySummary();
+    try { localStorage.setItem(KEY_NEW, JSON.stringify(state)); }
+    catch (e) { console.error("Save failed:", e); toast("Nu pot salva (storage blocat)."); }
+    try { writeLegacySummary(); } catch {}
   }
 
   function loadRaw(){
-    // prefer KEY_NEW; fallback to KEY_OLD (migrăm)
     const rawNew = localStorage.getItem(KEY_NEW);
     if (rawNew) return { raw: rawNew, from: KEY_NEW };
     const rawOld = localStorage.getItem(KEY_OLD);
@@ -424,19 +1075,17 @@ const app = (() => {
   async function ensurePinInit(){
     if (!state.security.salt || !state.security.hash) {
       state.security.salt = SEC.salt();
-      try {
-        state.security.hash = await SEC.hash(DEFAULT_PIN, state.security.salt);
-      } catch (e) {
-        // Dacă crypto.subtle lipsește, nu putem securiza hashing aici.
-        // Lăsăm pin gate ca "prompt-only" (fallback), dar în practică crypto există.
-        state.security.hash = ""; // will force fallback prompt path
-      }
+      try { state.security.hash = await SEC.hash(DEFAULT_PIN, state.security.salt); }
+      catch { state.security.hash = ""; }
       save();
     }
   }
 
-  function applySoundSetting(){
-    SFX.setEnabled(state.settings.sound === true);
+  function applySoundSetting(){ SFX.setEnabled(state.settings.sound === true); }
+
+  function applyKidMode(){
+    document.body.classList.toggle("kid", state.settings.kidMode === true);
+    document.getElementById("btnKid").style.opacity = state.settings.kidMode ? 1 : 0.6;
   }
 
   function getSkillSet(){
@@ -445,7 +1094,38 @@ const app = (() => {
       : ["add2","sub2","cmp2"];
   }
 
+  function getMedalTier(m){
+    if (m >= 0.90) return 3;     // gold
+    if (m >= 0.75) return 2;     // silver
+    if (m >= 0.55) return 1;     // bronze
+    return 0;
+  }
+  function medalIcon(m){
+    const t = getMedalTier(m);
+    return t === 3 ? "🥇" : (t === 2 ? "🥈" : (t === 1 ? "🥉" : "⚪"));
+  }
+
+  function medalsCount(){
+    const list = getSkillSet();
+    let c = 0;
+    for (const k of list){
+      const m = state.skills[k]?.m ?? 0;
+      if (getMedalTier(m) > 0) c++;
+    }
+    return c;
+  }
+
   function pickSkill(){
+    // Focus mode from map
+    if (ui.focusSkill && ui.focusLeft > 0 && state.skills[ui.focusSkill]){
+      ui.focusLeft--;
+      if (ui.focusLeft <= 0){
+        toast("Focus terminat ✅");
+        ui.focusSkill = null;
+      }
+      return ui.focusSkill;
+    }
+
     const set = getSkillSet();
     const weights = set.map(k => {
       const sk = state.skills[k];
@@ -459,30 +1139,28 @@ const app = (() => {
   }
 
   function genProblem(){
-    // ensure we always have a valid skill key
     let skKey = pickSkill();
     if (!state.skills[skKey]) skKey = "add1";
     const sk = state.skills[skKey];
-
     const p = { skill: skKey, type: "numpad", viz: null, txt: sk.n };
 
     if (skKey === "cnt") {
       const n = rand(3,10);
-      p.ans = n; p.viz = "dots_only"; p.a = n; p.txt = "Câte puncte sunt?";
+      p.ans = n; p.viz = "dots_only"; p.a = n; p.txt = "Numără";
       return p;
     }
 
     if (skKey === "mk10") {
       const a = rand(1,9);
       p.a = a; p.b = 10; p.ans = 10 - a; p.op = "+"; p.viz = "tenframe"; p.mode = "missing";
-      p.txt = "Cât lipsește până la 10?";
+      p.txt = "Până la 10";
       return p;
     }
 
     if (skKey === "cmp1") {
       const a = rand(1,10), b = rand(1,10);
       p.a = a; p.b = b; p.ans = (a===b ? "=" : (a>b ? ">" : "<")); p.type = "cmp";
-      p.txt = "Compară (1–10)";
+      p.txt = "Compară";
       return p;
     }
 
@@ -497,37 +1175,123 @@ const app = (() => {
     if (skKey === "add1") {
       const a = rand(1,8), b = rand(1, 9-a);
       p.a = a; p.b = b; p.op = "+"; p.ans = a+b; p.viz = "dots_help";
+      p.txt = "Adunări";
       return p;
     }
 
     if (skKey === "sub1") {
       const a = rand(2,9), b = rand(1,a);
       p.a = a; p.b = b; p.op = "−"; p.ans = a-b; p.viz = "dots_help";
+      p.txt = "Scăderi";
       return p;
     }
 
     if (skKey === "add2") {
       const a = rand(6,9), b = rand(11-a, 9);
       p.a = a; p.b = b; p.op = "+"; p.ans = a+b;
+      p.txt = "Adunări (10–20)";
       return p;
     }
 
     if (skKey === "sub2") {
       const a = rand(11,18), b = rand(a-9, 9);
       p.a = a; p.b = b; p.op = "−"; p.ans = a-b;
+      p.txt = "Scăderi (10–20)";
       return p;
     }
 
-    // fallback
-    return { skill:"add1", type:"numpad", viz:"dots_help", txt:"Adunări (1-10)", a:1, b:1, op:"+", ans:2 };
+    return { skill:"add1", type:"numpad", viz:"dots_help", txt:"Adunări", a:1, b:1, op:"+", ans:2 };
+  }
+
+  /* Voice-like prompt bubble (no TTS) */
+  function promptLine(p){
+    const kid = state.settings.kidMode === true;
+    const skill = p.skill;
+
+    const pick = (arr) => arr[Math.floor(Math.random()*arr.length)];
+    const tails = kid ? ["🙂", "😄", "✨", "🧠", "🏅"] : [""];
+
+    const add = [
+      "Hai să adunăm! Pune răspunsul jos.",
+      "Super! Cât fac împreună?",
+      "Gata de calcul? Scrie rezultatul!",
+      "Adunăm rapid și frumos."
+    ];
+    const sub = [
+      "Scădem! Câte rămân?",
+      "Ia una câte una… cât rămâne?",
+      "Perfect. Fă scăderea și scrie răspunsul."
+    ];
+    const mk10 = [
+      "Completează până la 10.",
+      "Câte îi mai trebuie ca să fie 10?",
+      "Mai lipsește puțin… cât?"
+    ];
+    const cnt = [
+      "Numără atent punctele.",
+      "Numără și spune-mi câte sunt!",
+      "Cu răbdare… câte puncte vezi?"
+    ];
+    const cmp = [
+      "Alege semnul corect: < = >",
+      "Care e mai mare? Alege semnul!",
+      "Compară cele două numere."
+    ];
+
+    let base = "Hai!";
+    if (skill.startsWith("add")) base = pick(add);
+    else if (skill.startsWith("sub")) base = pick(sub);
+    else if (skill === "mk10") base = pick(mk10);
+    else if (skill === "cnt") base = pick(cnt);
+    else if (skill.startsWith("cmp")) base = pick(cmp);
+
+    const tail = pick(tails);
+    return kid ? `${base} ${tail}` : base;
   }
 
   function newRound(){
     locked = false;
     inputBuf = "";
-    document.getElementById("uiFeedback").style.display = "none";
+    hideFeedback();
     current = genProblem();
     renderProblem();
+  }
+
+  function showFeedback(ok){
+    const fb = document.getElementById("uiFeedback");
+    fb.classList.add("show");
+
+    const icon = document.getElementById("fbIcon");
+    const title = document.getElementById("fbTitle");
+    const sub = document.getElementById("fbSub");
+    const btn = document.getElementById("btnNext");
+
+    if (ok){
+      icon.textContent = "🎉";
+      title.textContent = "Bravo!";
+      title.style.color = "var(--good)";
+      sub.textContent = "+10 XP";
+      btn.textContent = "Continuă";
+      btn.style.background = "var(--good)";
+      btn.style.color = "#064e3b";
+      btn.style.boxShadow = "0 0 22px rgba(74,222,128,.35)";
+      Confetti.burst();
+    } else {
+      icon.textContent = "🔁";
+      title.textContent = "Încă o dată!";
+      title.style.color = "var(--warn)";
+      // kid: shorter + friendly
+      const kid = state.settings.kidMode === true;
+      sub.textContent = kid ? `Răspuns: ${current.ans}` : `Răspunsul era: ${current.ans}`;
+      btn.textContent = "Am înțeles";
+      btn.style.background = "var(--warn)";
+      btn.style.color = "#422006";
+      btn.style.boxShadow = "0 0 22px rgba(251,191,36,.28)";
+    }
+  }
+
+  function hideFeedback(){
+    document.getElementById("uiFeedback").classList.remove("show");
   }
 
   function check(val){
@@ -539,49 +1303,52 @@ const app = (() => {
       : Number(val) === Number(current.ans);
 
     const sk = state.skills[current.skill] || state.skills.add1;
+    const prevM = sk.m;
+    const prevTier = getMedalTier(prevM);
 
     if (correct) {
       SFX.correct();
+      vibe(18);
       state.economy.xp += 10;
       state.economy.streak += 1;
       sk.m = Math.min(0.99, sk.m + 0.05);
+
       if (state.economy.streak % 5 === 0) {
         state.economy.coins += 5;
-        toast("Streak Bonus! +5 🪙");
+        toast("Bonus! +5 🪙");
+        vibe(25);
       }
     } else {
       SFX.wrong();
+      vibe(40);
       state.economy.streak = 0;
       sk.m = Math.max(0.05, sk.m - 0.04);
+
+      const box = document.getElementById("ansBox");
+      if (box){
+        box.classList.remove("shake");
+        void box.offsetWidth;
+        box.classList.add("shake");
+      }
+    }
+
+    // medal upgrade check
+    const newTier = getMedalTier(sk.m);
+    if (correct && newTier > prevTier) {
+      const icon = medalIcon(sk.m);
+      toast(`Medalie nouă! ${icon}`);
+      // extra tiny confetti burst already happens on correct feedback (good enough)
     }
 
     state.skills[current.skill] = sk;
     save();
-    renderStats();
-
-    const fb = document.getElementById("uiFeedback");
-    fb.style.display = "flex";
-    const title = document.getElementById("fbTitle");
-    const btn = document.getElementById("btnNext");
-
-    if (correct) {
-      document.getElementById("fbIcon").textContent = "⭐";
-      title.textContent = "Corect!";
-      title.style.color = "var(--good)";
-      document.getElementById("fbSub").textContent = "+10 XP";
-      btn.style.background = "var(--good)";
-      btn.textContent = "Continuă";
-    } else {
-      document.getElementById("fbIcon").textContent = "❌";
-      title.textContent = "Greșit";
-      title.style.color = "var(--bad)";
-      document.getElementById("fbSub").textContent = `Răspunsul era: ${current.ans}`;
-      btn.style.background = "var(--warn)";
-      btn.textContent = "Am înțeles";
-    }
+    renderStats(); // includes map refresh
+    showFeedback(correct);
   }
 
   function makeEasier(){
+    /* PATCH #5 */
+    if (!current) { toast("Începem imediat 🙂"); return; }
     const sk = state.skills[current.skill];
     if (sk) {
       sk.m = Math.max(0.05, sk.m - 0.10);
@@ -589,7 +1356,7 @@ const app = (() => {
       save();
       renderStats();
     }
-    toast("Am simplificat puțin.");
+    toast("Mai ușor 🧸");
     newRound();
   }
 
@@ -608,8 +1375,17 @@ const app = (() => {
   function renderProblem(){
     const p = current;
     document.getElementById("uiSkillName").textContent = p.txt || "Exercițiu";
+
     const body = document.getElementById("uiProblem");
     let h = "";
+
+    // voice-like bubble
+    const line = promptLine(p);
+    const focusHint = (ui.focusSkill && ui.focusLeft > 0)
+      ? `<small>🎯 Focus: ${state.skills[ui.focusSkill]?.n || ui.focusSkill} (${ui.focusLeft} rămase)</small>`
+      : `<small>Apasă cifrele și apoi OK</small>`;
+
+    h += `<div class="bubble">${line}<br>${focusHint}</div>`;
 
     if (p.viz === "tenframe") {
       h += `<div class="viz-area">${getFrame(p.a)}</div>`;
@@ -618,7 +1394,7 @@ const app = (() => {
     } else if (p.viz === "dots_help") {
       h += `<div class="viz-area">
               <div class="dot-group">${getDots(p.a)}</div>
-              <div style="width:20px"></div>
+              <div style="width:18px"></div>
               <div class="dot-group">${getDots(p.b)}</div>
             </div>`;
     }
@@ -641,6 +1417,8 @@ const app = (() => {
   function renderKeypad(){
     const kbd = document.getElementById("kbd");
     kbd.innerHTML = "";
+    kbd.classList.toggle("wide", ui.wideKeypad);
+    kbd.classList.toggle("cmp", current.type === "cmp");
 
     if (current.type === "cmp") {
       ["<","=",">"].forEach(s=>{
@@ -651,7 +1429,7 @@ const app = (() => {
         kbd.appendChild(b);
       });
       const skp = document.createElement("button");
-      skp.className = "btn ghost";
+      skp.className = "btn small";
       skp.textContent = "Schimbă";
       skp.onclick = newRound;
       skp.style.gridColumn = "span 3";
@@ -659,7 +1437,50 @@ const app = (() => {
       return;
     }
 
-    [1,2,3,4,5,6,7,8,9].forEach(n=>{
+    const onInput = (v) => {
+      SFX.click();
+      if (v === "del") inputBuf = inputBuf.slice(0,-1);
+      else if (inputBuf.length < 2) inputBuf += String(v);
+
+      const box = document.getElementById("ansBox");
+      if (!box) return;
+      box.textContent = inputBuf || "?";
+      box.classList.toggle("filled", !!inputBuf);
+    };
+
+    if (!ui.wideKeypad){
+      [1,2,3,4,5,6,7,8,9].forEach(n=>{
+        const b = document.createElement("button");
+        b.className = "btn";
+        b.textContent = n;
+        b.onclick = ()=>onInput(n);
+        kbd.appendChild(b);
+      });
+
+      const del = document.createElement("button");
+      del.className = "btn warn small";
+      del.textContent = "⌫";
+      del.onclick = ()=>onInput("del");
+      kbd.appendChild(del);
+
+      const b0 = document.createElement("button");
+      b0.className = "btn";
+      b0.textContent = "0";
+      b0.onclick = ()=>onInput(0);
+      kbd.appendChild(b0);
+
+      const ok = document.createElement("button");
+      ok.className = "btn primary small";
+      ok.textContent = "OK";
+      ok.onclick = ()=>check(inputBuf);
+      kbd.appendChild(ok);
+      return;
+    }
+
+    // Wide keypad: 5 columns
+    const row1 = [1,2,3,4,5];
+    const row2 = [6,7,8,9,0];
+    row1.concat(row2).forEach(n=>{
       const b = document.createElement("button");
       b.className = "btn";
       b.textContent = n;
@@ -668,53 +1489,28 @@ const app = (() => {
     });
 
     const del = document.createElement("button");
-    del.className = "btn warn small";
-    del.textContent = "⌫";
+    del.className = "btn warn small span2";
+    del.textContent = "⌫ Șterge";
     del.onclick = ()=>onInput("del");
     kbd.appendChild(del);
 
-    const b0 = document.createElement("button");
-    b0.className = "btn";
-    b0.textContent = "0";
-    b0.onclick = ()=>onInput(0);
-    kbd.appendChild(b0);
-
     const ok = document.createElement("button");
-    ok.className = "btn primary small";
-    ok.textContent = "OK";
+    ok.className = "btn good span3";
+    ok.textContent = "OK ✅";
     ok.onclick = ()=>check(inputBuf);
     kbd.appendChild(ok);
   }
 
-  function onInput(v){
-    SFX.click();
-    if (v === "del") inputBuf = inputBuf.slice(0,-1);
-    else if (inputBuf.length < 2) inputBuf += String(v);
-
-    const box = document.getElementById("ansBox");
-    box.textContent = inputBuf || "?";
-    if (inputBuf) box.classList.add("filled");
-    else box.classList.remove("filled");
-  }
-
-  function renderStats(){
-    document.getElementById("uiXp").textContent = state.economy.xp;
-    document.getElementById("uiCoins").textContent = state.economy.coins;
-    document.getElementById("uiStreak").textContent = state.economy.streak;
-
-    document.getElementById("btnLvl1").classList.toggle("active", state.settings.level===1);
-    document.getElementById("btnLvl2").classList.toggle("active", state.settings.level===2);
-    document.getElementById("btnSound").style.opacity = (state.settings.sound ? 1 : 0.5);
-
-    // Skills list (aici e "renderSkills", integrat)
-    const skBox = document.getElementById("uiSkills");
-    skBox.innerHTML = "";
+  function renderSkillsInto(id){
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = "";
     const list = getSkillSet();
     list.forEach(k=>{
       const sk = state.skills[k];
       if (!sk) return;
       const pct = Math.round((sk.m || 0) * 100);
-      skBox.innerHTML += `
+      el.innerHTML += `
         <div class="skill-item">
           <div class="skill-top"><span>${sk.n}</span><span>${pct}%</span></div>
           <div class="meter"><div class="fill" style="width:${pct}%"></div></div>
@@ -723,19 +1519,114 @@ const app = (() => {
     });
   }
 
+  function renderMap(){
+    const grid = document.getElementById("uiMap");
+    if (!grid) return;
+
+    grid.innerHTML = "";
+    const list = getSkillSet();
+
+    list.forEach(k=>{
+      const sk = state.skills[k];
+      if (!sk) return;
+      const pct = Math.round((sk.m || 0) * 100);
+      const icon = medalIcon(sk.m);
+
+      const tile = document.createElement("div");
+      tile.className = "mapTile";
+
+      tile.innerHTML = `
+        <div class="mapTop">
+          <div>
+            <div class="mapName">${sk.n}</div>
+            <div class="mapPct">${pct}%</div>
+          </div>
+          <div class="medal" title="Medalie">${icon}</div>
+        </div>
+        <div class="mapBar"><div class="mapFill" style="width:${pct}%"></div></div>
+        <div class="mapActions">
+          <button class="miniBtn focus">🎯 Focus 5</button>
+          <button class="miniBtn">▶️ Joacă</button>
+        </div>
+      `;
+
+      const [btnFocus, btnPlay] = tile.querySelectorAll("button");
+      btnFocus.onclick = () => {
+        ui.focusSkill = k;
+        ui.focusLeft = 5;
+        toast(`Focus: ${sk.n} 🎯`);
+        renderProblem();
+        toggleDrawer(false);
+      };
+      btnPlay.onclick = () => {
+        // one immediate round biased to this skill
+        ui.focusSkill = k;
+        ui.focusLeft = 1;
+        toast(`Joacă: ${sk.n} ▶️`);
+        newRound();
+        toggleDrawer(false);
+      };
+
+      grid.appendChild(tile);
+    });
+  }
+
+  function renderStats(){
+    const xp = state.economy.xp;
+    const coins = state.economy.coins;
+    const streak = state.economy.streak;
+    const mcount = medalsCount();
+
+    document.getElementById("uiXp").textContent = xp;
+    document.getElementById("uiCoins").textContent = coins;
+    document.getElementById("uiStreak").textContent = streak;
+    document.getElementById("uiMedals").textContent = mcount;
+
+    const xp2 = document.getElementById("uiXp2");
+    const c2 = document.getElementById("uiCoins2");
+    const s2 = document.getElementById("uiStreak2");
+    const m2 = document.getElementById("uiMedals2");
+    if (xp2) xp2.textContent = xp;
+    if (c2) c2.textContent = coins;
+    if (s2) s2.textContent = streak;
+    if (m2) m2.textContent = mcount;
+
+    document.getElementById("btnLvl1").classList.toggle("active", state.settings.level===1);
+    document.getElementById("btnLvl2").classList.toggle("active", state.settings.level===2);
+    document.getElementById("btnSound").style.opacity = (state.settings.sound ? 1 : 0.5);
+
+    renderSkillsInto("uiSkillsSide");
+    renderSkillsInto("uiSkillsDrawer");
+    renderMap();
+  }
+
+  function updateResponsive(){
+    const w = window.innerWidth || 0;
+    const h = window.innerHeight || 0;
+    const base = Math.min(w, h);
+
+    let s = base / 780;
+    s = Math.max(0.88, Math.min(1.25, s));
+    document.documentElement.style.setProperty("--S", s.toFixed(3));
+
+    ui.wideKeypad = (w >= 740) || (w > h && w >= 680);
+    if (current) renderKeypad();
+  }
+
   async function init(){
+    updateResponsive();
+    window.addEventListener("resize", updateResponsive, { passive:true });
+    window.addEventListener("orientationchange", () => setTimeout(updateResponsive, 80), { passive:true });
+
     const { raw, from } = loadRaw();
     if (raw) {
       try {
-        const parsed = JSON.parse(raw);
-        state = normalizeState(parsed);
-
-        // migrare: dacă venea din KEY_OLD, îl mutăm în KEY_NEW
+        state = normalizeState(JSON.parse(raw));
         if (from === KEY_OLD) {
           localStorage.removeItem(KEY_OLD);
           save();
         }
-      } catch (e) {
+      } catch {
         state = defaultState();
         save();
       }
@@ -746,11 +1637,11 @@ const app = (() => {
 
     await ensurePinInit();
     applySoundSetting();
+    applyKidMode();
     renderStats();
     newRound();
   }
 
-  // Parent gate (dialog dacă există, altfel prompt)
   function parentGate(){
     document.getElementById("pinMsg").textContent = "";
     document.getElementById("pinInput").value = "";
@@ -761,14 +1652,12 @@ const app = (() => {
       return;
     }
 
-    // fallback (dacă <dialog> nu e suportat)
     const pin = prompt("PIN pentru Dashboard:");
     if (pin == null) return;
     verifyPinAndOpen(pin.trim()).catch(()=>alert("PIN incorect."));
   }
 
   async function verifyPinAndOpen(pin){
-    // dacă nu avem hash (crypto lipsă), fallback pe DEFAULT_PIN (slab)
     if (!state.security.hash) {
       if (pin === DEFAULT_PIN) openParent();
       else throw new Error("bad pin");
@@ -782,7 +1671,7 @@ const app = (() => {
   function openParent(){
     document.getElementById("stateDump").value = JSON.stringify(state, null, 2);
     const okDialog = safeOpenDialog("parentDlg");
-    if (!okDialog) alert("Dashboard Părinte indisponibil (browser). Folosește Export JSON din alt browser.");
+    if (!okDialog) alert("Dashboard Părinte indisponibil (browser).");
   }
 
   function resetAll(){
@@ -805,7 +1694,7 @@ const app = (() => {
     state.security.salt = SEC.salt();
     try {
       state.security.hash = await SEC.hash(p.trim(), state.security.salt);
-    } catch (e) {
+    } catch {
       alert("Browserul nu suportă crypto.subtle pentru hash. PIN-ul nu poate fi securizat aici.");
       state.security.hash = "";
     }
@@ -828,11 +1717,10 @@ const app = (() => {
     const r = new FileReader();
     r.onload = (e) => {
       try {
-        const parsed = JSON.parse(e.target.result);
-        state = normalizeState(parsed);
+        state = normalizeState(JSON.parse(e.target.result));
         save();
         location.reload();
-      } catch (err) {
+      } catch {
         alert("Eroare la import (JSON invalid).");
       }
     };
@@ -841,6 +1729,8 @@ const app = (() => {
 
   function setLevel(l){
     state.settings.level = (l === 2) ? 2 : 1;
+    // reset focus when changing level
+    ui.focusSkill = null; ui.focusLeft = 0;
     save();
     renderStats();
     newRound();
@@ -853,6 +1743,54 @@ const app = (() => {
     renderStats();
   }
 
+  function toggleKidMode(){
+    state.settings.kidMode = !state.settings.kidMode;
+    save();
+    applyKidMode();
+    toast(state.settings.kidMode ? "Super Kid ON 🧸" : "Super Kid OFF");
+    renderProblem();
+  }
+
+  function toggleDrawer(forceOpen){
+    const drawer = document.getElementById("drawer");
+    if (!drawer) return;
+
+    const open = (typeof forceOpen === "boolean") ? forceOpen : !ui.drawerOpen;
+    ui.drawerOpen = open;
+
+    drawer.classList.toggle("show", open);
+    drawer.setAttribute("aria-hidden", open ? "false" : "true");
+
+    if (open){
+      renderStats();
+      const onKey = (e) => {
+        if (e.key === "Escape") {
+          ui.drawerOpen = false;
+          drawer.classList.remove("show");
+          drawer.setAttribute("aria-hidden","true");
+          window.removeEventListener("keydown", onKey);
+        }
+      };
+      window.addEventListener("keydown", onKey);
+    }
+  }
+
+  function setDrawerTab(tab){
+    ui.drawerTab = tab;
+    document.getElementById("tabProg").classList.toggle("active", tab === "progress");
+    document.getElementById("tabMap").classList.toggle("active", tab === "map");
+    document.getElementById("tabParent").classList.toggle("active", tab === "parent");
+
+    document.getElementById("drawerProgress").style.display = (tab === "progress") ? "block" : "none";
+    document.getElementById("drawerMap").style.display = (tab === "map") ? "block" : "none";
+    document.getElementById("drawerParent").style.display = (tab === "parent") ? "block" : "none";
+
+    document.getElementById("drawerTitle").textContent =
+      tab === "progress" ? "⭐ Progres" : (tab === "map" ? "🏅 Harta" : "🔒 Părinte");
+
+    renderStats();
+  }
+
   return {
     init,
     newRound,
@@ -860,13 +1798,15 @@ const app = (() => {
     makeEasier,
     setLevel,
     toggleSound,
+    toggleKidMode,
     parentGate,
     resetAll,
     giveCoins,
     changePin,
     exportData,
     importData,
-    // exposed for PIN button handler
+    toggleDrawer,
+    setDrawerTab,
     _verifyPinAndOpen: verifyPinAndOpen
   };
 })();
