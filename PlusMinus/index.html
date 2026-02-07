@@ -172,6 +172,19 @@
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size:12px;
     }
+    .pinInput{
+      width:100%;
+      background:rgba(255,255,255,.06);
+      color:var(--text);
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:14px;
+      padding:14px 12px;
+      font-size:22px;
+      font-weight:900;
+      letter-spacing:.12em;
+      text-align:center;
+      outline:none;
+    }
     .toast{
       position:fixed; left:50%; bottom:18px; transform:translateX(-50%);
       background:rgba(0,0,0,.65);
@@ -232,7 +245,7 @@
 
         <div class="card">
           <div class="h">Control părinte</div>
-          <div class="subtext">Export/import progres (backup), reset, și vizualizare date locale.</div>
+          <div class="subtext">Dashboard-ul este protejat cu PIN (ca să nu fie resetat din greșeală).</div>
           <div class="footerBtns" style="margin-top:12px">
             <button class="btn small primary" id="btnParent">Dashboard</button>
             <button class="btn small" id="btnExport">Export</button>
@@ -245,6 +258,40 @@
       </div>
     </div>
   </div>
+
+  <!-- PIN gate -->
+  <dialog id="pinDlg">
+    <div class="modal">
+      <div class="row" style="justify-content:space-between;align-items:flex-start">
+        <div>
+          <h3>PIN părinte</h3>
+          <p>Introdu PIN-ul pentru a deschide Dashboard-ul.</p>
+        </div>
+        <button class="btn small" id="pinCancel">Închide</button>
+      </div>
+
+      <input
+        id="pinInput"
+        class="pinInput"
+        type="password"
+        inputmode="numeric"
+        pattern="[0-9]*"
+        maxlength="8"
+        placeholder="••••"
+        autocomplete="off"
+      />
+
+      <div id="pinMsg" class="subtext" style="min-height:18px;margin-top:10px;color:var(--bad);font-weight:900"></div>
+
+      <div class="row" style="justify-content:flex-end;margin-top:12px">
+        <button class="btn small primary" id="pinOk">OK</button>
+      </div>
+
+      <div class="subtext" style="margin-top:12px">
+        PIN implicit: <b>2580</b> (îl poți schimba din Dashboard).
+      </div>
+    </div>
+  </dialog>
 
   <dialog id="parentDlg">
     <div class="modal">
@@ -260,6 +307,7 @@
         <button class="btn small warn" id="btnResetAll">Reset TOTAL</button>
         <button class="btn small" id="btnResetSkills">Reset doar abilități</button>
         <button class="btn small" id="btnGiveCoins">+50 coins</button>
+        <button class="btn small primary" id="btnChangePin">Schimbă PIN</button>
       </div>
 
       <div class="h">Date (JSON)</div>
@@ -273,11 +321,9 @@
 (() => {
   /**
    * MarcLab → PlusMinus (Level 1: 1–10)
-   * - localStorage for memory
-   * - adaptive selection per skill mastery
-   * - gamification: XP/Level/Streak/Coins
    */
   const STORAGE_KEY = "marclab-plusminus-l1-v1";
+  const DEFAULT_PARENT_PIN = "2580"; // se poate schimba din Dashboard
 
   const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
   const now = ()=>performance.now();
@@ -295,7 +341,7 @@
       meta: { brand: "MarcLab", module: "PlusMinus", level: "L1_1-10", version: 1, createdAt: Date.now() },
       player: { name: "Marc" },
       economy: { xp: 0, level: 1, coins: 0, streak: 0, bestStreak: 0 },
-      // mastery: 0..1 (mai mare = mai bun)
+      security: { pinSalt: "", pinHash: "", pinSetAt: null }, // completat la init
       skills: {
         add:      { name:"Adunări",      level:1, mastery:.45, attempts:0, correct:0, emaTime: 0, last: null },
         sub:      { name:"Scăderi",      level:1, mastery:.35, attempts:0, correct:0, emaTime: 0, last: null },
@@ -303,7 +349,7 @@
         compare:  { name:"Compară",      level:1, mastery:.30, attempts:0, correct:0, emaTime: 0, last: null },
         count:    { name:"Numără",       level:1, mastery:.40, attempts:0, correct:0, emaTime: 0, last: null },
       },
-      history: [] // ultimele N răspunsuri
+      history: []
     };
   }
 
@@ -313,8 +359,8 @@
       if(!raw) return defaultState();
       const s = JSON.parse(raw);
       if(!s.skills || !s.economy) return defaultState();
-      // ensure meta fields exist
-      s.meta = s.meta || defaultState().meta;
+      if(!s.meta) s.meta = defaultState().meta;
+      if(!s.security) s.security = defaultState().security;
       return s;
     }catch(e){
       return defaultState();
@@ -331,10 +377,8 @@
 
   function award(correct, timeMs){
     const eco = state.economy;
-
     let gained = correct ? 10 : 2;
     if(correct && timeMs > 0 && timeMs < 6000) gained += 2;
-
     eco.xp += gained;
 
     const newLevel = xpToLevel(eco.xp);
@@ -447,6 +491,40 @@
     return { skill: "add", type:"eq", text:"Adună", a:1, b:1, op:"+", answer:2 };
   }
 
+  // --- PIN helpers (SHA-256) ---
+  function genSalt(){
+    const a = new Uint8Array(16);
+    crypto.getRandomValues(a);
+    return Array.from(a).map(b=>b.toString(16).padStart(2,"0")).join("");
+  }
+  async function sha256Hex(str){
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+    return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
+  }
+  async function hashPin(pin, salt){
+    return sha256Hex(`${pin}:${salt}`);
+  }
+  async function ensurePinSetup(){
+    if(!state.security) state.security = { pinSalt:"", pinHash:"", pinSetAt:null };
+    if(!state.security.pinSalt) state.security.pinSalt = genSalt();
+    if(!state.security.pinHash){
+      state.security.pinHash = await hashPin(DEFAULT_PARENT_PIN, state.security.pinSalt);
+      state.security.pinSetAt = Date.now();
+      saveState();
+    }
+  }
+  async function verifyPin(pin){
+    await ensurePinSetup();
+    const h = await hashPin(pin, state.security.pinSalt);
+    return h === state.security.pinHash;
+  }
+  async function setPin(newPin){
+    state.security.pinSalt = genSalt();
+    state.security.pinHash = await hashPin(newPin, state.security.pinSalt);
+    state.security.pinSetAt = Date.now();
+    saveState();
+  }
+
   // UI refs
   const ui = {
     level: document.getElementById("uiLevel"),
@@ -462,6 +540,15 @@
     skillsGrid: document.getElementById("skillsGrid"),
     btnResetRound: document.getElementById("btnResetRound"),
     btnEasy: document.getElementById("btnEasy"),
+
+    // PIN dialog
+    pinDlg: document.getElementById("pinDlg"),
+    pinInput: document.getElementById("pinInput"),
+    pinMsg: document.getElementById("pinMsg"),
+    pinOk: document.getElementById("pinOk"),
+    pinCancel: document.getElementById("pinCancel"),
+
+    // Parent dashboard
     parentDlg: document.getElementById("parentDlg"),
     btnParent: document.getElementById("btnParent"),
     btnCloseDlg: document.getElementById("btnCloseDlg"),
@@ -469,6 +556,9 @@
     btnResetAll: document.getElementById("btnResetAll"),
     btnResetSkills: document.getElementById("btnResetSkills"),
     btnGiveCoins: document.getElementById("btnGiveCoins"),
+    btnChangePin: document.getElementById("btnChangePin"),
+
+    // Export/Import
     btnExport: document.getElementById("btnExport"),
     importFile: document.getElementById("importFile"),
   };
@@ -487,7 +577,7 @@
 
   function renderSkills(){
     ui.skillsGrid.innerHTML = "";
-    for(const [k, sk] of Object.entries(state.skills)){
+    for(const sk of Object.values(state.skills)){
       const div = document.createElement("div");
       div.className = "skill";
       const pct = Math.round(sk.mastery*100);
@@ -676,8 +766,6 @@
     ui.feedbackText.innerHTML = correct
       ? `<span class="ok">Corect! ✅</span> + XP`
       : `<span class="no">Aproape. ❌</span> Răspuns: <b>${current.answer}</b>`;
-
-    ui.btnNext.focus();
   }
 
   function newRound(){
@@ -694,13 +782,45 @@
     newRound();
   }
 
-  // Parent dashboard
+  // --- Parent Dashboard (PIN protected) ---
   function openParent(){
     ui.stateDump.value = JSON.stringify(state, null, 2);
     ui.parentDlg.showModal();
   }
 
-  ui.btnParent.onclick = openParent;
+  async function openParentGate(){
+    await ensurePinSetup();
+    ui.pinMsg.textContent = "";
+    ui.pinInput.value = "";
+    ui.pinDlg.showModal();
+    setTimeout(()=>ui.pinInput.focus(), 0);
+  }
+
+  ui.btnParent.onclick = openParentGate;
+  ui.pinCancel.onclick = ()=>ui.pinDlg.close();
+
+  ui.pinOk.onclick = async () => {
+    const pin = (ui.pinInput.value || "").trim();
+    if(pin.length < 4){
+      ui.pinMsg.textContent = "PIN prea scurt (minim 4 cifre).";
+      return;
+    }
+    const ok = await verifyPin(pin);
+    if(!ok){
+      ui.pinMsg.textContent = "PIN greșit.";
+      ui.pinInput.value = "";
+      ui.pinInput.focus();
+      return;
+    }
+    ui.pinDlg.close();
+    openParent();
+  };
+
+  ui.pinInput.addEventListener("keydown", (e)=>{
+    if(e.key === "Enter") ui.pinOk.click();
+    if(e.key === "Escape") ui.pinCancel.click();
+  });
+
   ui.btnCloseDlg.onclick = ()=>ui.parentDlg.close();
 
   ui.btnResetAll.onclick = ()=>{
@@ -730,6 +850,19 @@
     toast("+50 coins 🪙");
   };
 
+  ui.btnChangePin.onclick = async ()=>{
+    const p1 = prompt("Noul PIN (4–8 cifre):");
+    if(!p1) return;
+    const pin = String(p1).trim();
+    if(!/^\d{4,8}$/.test(pin)){
+      alert("PIN invalid. Folosește doar cifre (4–8).");
+      return;
+    }
+    await setPin(pin);
+    ui.stateDump.value = JSON.stringify(state, null, 2);
+    toast("PIN schimbat ✅");
+  };
+
   // Export / Import
   ui.btnExport.onclick = ()=>{
     const blob = new Blob([JSON.stringify(state, null, 2)], {type:"application/json"});
@@ -749,6 +882,7 @@
       const s = JSON.parse(text);
       if(!s.skills || !s.economy) throw new Error("format invalid");
       state = s;
+      if(!state.security) state.security = defaultState().security;
       saveState();
       renderStats(); renderSkills(); newRound();
       toast("Import OK ✅");
@@ -764,9 +898,13 @@
   ui.btnEasy.onclick = ()=>makeEasier();
 
   // Init
-  renderStats();
-  renderSkills();
-  newRound();
+  (async () => {
+    await ensurePinSetup();
+    renderStats();
+    renderSkills();
+    newRound();
+  })();
+
 })();
 </script>
 </body>
