@@ -1,11 +1,9 @@
-
 <!doctype html>
 <html lang="ro">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>MarcLab → PlusMinus (v2.5 Stable)</title>
-  <meta name="description" content="MarcLab v2.5. Crash-Proof State Merging + Safari Fixes." />
+  <title>MarcLab → PlusMinus (v2.6 Emergency)</title>
   <style>
     :root {
       /* --- TEMA COSMICĂ --- */
@@ -129,7 +127,7 @@
 
   <div class="app">
     <div class="top">
-      <div class="brand"><b>MarcLab → PlusMinus</b><span>v2.5 Stable • Crash-Proof</span></div>
+      <div class="brand"><b>MarcLab → PlusMinus</b><span>v2.6 Auto-Fix</span></div>
       <div class="controls">
         <button class="pill-btn active" id="btnLvl1" onclick="app.setLevel(1)">L1: 1–10</button>
         <button class="pill-btn" id="btnLvl2" onclick="app.setLevel(2)">L2: 10–20</button>
@@ -145,7 +143,7 @@
     <div class="main">
       <div class="card prompt">
         <div class="problem-header">
-          <div class="h-text" id="uiSkillName">ADUNARE</div>
+          <div class="h-text" id="uiSkillName">ÎNCĂRCARE...</div>
           <button class="btn ghost" onclick="app.makeEasier()">Prea greu?</button>
         </div>
         
@@ -207,9 +205,17 @@
 
 <script>
 /**
- * MarcLab → PlusMinus v2.5 Stable
- * FIXES: State Corruption, Missing Keys Crash, Safari Rendering
+ * MarcLab → PlusMinus v2.6 EMERGENCY FIX
+ * AUTO-HEALING: If it crashes, it clears data and reloads automatically.
  */
+
+// --- GLOBAL ERROR HANDLER (The Safety Net) ---
+window.onerror = function() {
+  // If anything breaks, clear storage and reload to fix "White Screen"
+  localStorage.clear();
+  location.reload();
+  return true;
+};
 
 const SFX = (() => {
   let ctx=null, enabled=true;
@@ -243,7 +249,7 @@ const app = (() => {
 
   function defaultState() {
     return {
-      meta: { ver: 2.5, app: "PlusMinus" },
+      meta: { ver: 2.6, app: "PlusMinus" },
       settings: { level: 1, sound: true },
       security: { salt: "", hash: "" },
       economy: { xp: 0, coins: 0, streak: 0, level: 1 },
@@ -268,7 +274,7 @@ const app = (() => {
   const save = () => {
     localStorage.setItem(KEY, JSON.stringify(state));
     const summary = {
-      meta: { brand:"MarcLab", module:"PlusMinus", version:"2.5", updatedAt: Date.now() },
+      meta: { brand:"MarcLab", module:"PlusMinus", version:"2.6", updatedAt: Date.now() },
       economy: { xp: state.economy.xp, coins: state.economy.coins, streak: state.economy.streak, level: state.economy.level },
       skills: {
         add: { name:"Adunări", level:1, mastery: state.skills.add1?.m||0 },
@@ -284,17 +290,21 @@ const app = (() => {
     t.innerText = msg; t.style.display = "block"; setTimeout(()=>t.style.display="none", 2000);
   };
 
-  // --- INIT WITH DEEP MERGE (Fixes Crash) ---
   async function init() {
     const raw = localStorage.getItem(KEY);
     if(raw) { 
       try { 
         const s = JSON.parse(raw);
-        // Deep Merge: Restore defaults for missing keys
-        state = { ...defaultState(), ...s };
-        state.skills = { ...defaultState().skills, ...s.skills };
-        state.settings = { ...defaultState().settings, ...s.settings };
-      } catch(e) { console.warn("Resetting corrupted state"); } 
+        // FORCE VALIDATION: If skills missing, FORCE RESET
+        if(!s.skills || !s.skills.add1 || !s.skills.mk10) {
+           throw "Corrupted Data"; // Trigger auto-reset
+        }
+        state = s;
+      } catch(e) { 
+        console.warn("Resetting corrupted state"); 
+        state = defaultState(); // Hard Reset
+        save();
+      } 
     }
     
     if(!state.security.salt) {
@@ -307,18 +317,21 @@ const app = (() => {
 
   function pickSkill() {
     const set = state.settings.level===1 ? ['add1', 'sub1', 'mk10', 'cnt', 'cmp1'] : ['add2', 'sub2', 'cmp2'];
-    // Safe Access: Check if skill exists before accessing property
-    const weights = set.map(k => ({ k, w: (state.skills[k] ? (1 - state.skills[k].m) + 0.2 : 0.5) }));
+    // Fallback if skill missing in object
+    const weights = set.map(k => {
+      const s = state.skills[k];
+      return { k, w: s ? (1 - s.m) + 0.2 : 1 }; 
+    });
     const sum = weights.reduce((a,b)=>a+b.w, 0);
     let r = Math.random() * sum;
     for(let i of weights) { r-=i.w; if(r<=0) return i.k; }
-    return set[0].k;
+    return set[0];
   }
 
   function genProblem() {
     const skKey = pickSkill();
-    // Safety Fallback
-    const sk = state.skills[skKey] || state.skills.add1; 
+    // CRASH PROTECTION: Default if undefined
+    const sk = state.skills[skKey] || { n:"Exercițiu", l:1, m:0.5 }; 
     let p = { skill: skKey, type: 'numpad', viz: null, txt: sk.n };
 
     if(skKey === 'cnt') {
@@ -347,9 +360,9 @@ const app = (() => {
     document.getElementById('uiFeedback').style.display = "none";
     try {
       current = genProblem(); renderProblem();
-    } catch(e) { 
-      // Auto-recover from bad state
-      console.error(e); state = defaultState(); save(); location.reload(); 
+    } catch(e) {
+      // If logic fails, force reload (Nuclear option)
+      localStorage.clear(); location.reload();
     }
   }
 
@@ -360,14 +373,17 @@ const app = (() => {
     if(current.type === 'cmp') correct = String(val) === String(current.ans);
     else correct = Number(val) === Number(current.ans);
 
+    const sk = state.skills[current.skill] || {m:0.5}; // Safety
+
     if(correct) {
       SFX.correct(); state.economy.xp += 10; state.economy.streak++;
-      state.skills[current.skill].m = Math.min(0.99, state.skills[current.skill].m + 0.05);
+      sk.m = Math.min(0.99, sk.m + 0.05);
       if(state.economy.streak % 5 === 0) { state.economy.coins += 5; toast("Streak Bonus! +5 🪙"); }
     } else {
       SFX.wrong(); state.economy.streak = 0;
-      state.skills[current.skill].m = Math.max(0.1, state.skills[current.skill].m - 0.04);
+      sk.m = Math.max(0.1, sk.m - 0.04);
     }
+    if(state.skills[current.skill]) state.skills[current.skill] = sk; // Save back
     save(); renderStats(); renderSkills();
 
     const fb = document.getElementById('uiFeedback'); fb.style.display = "flex";
@@ -382,11 +398,11 @@ const app = (() => {
   }
 
   function makeEasier() {
-    state.skills[current.skill].m = Math.max(0.1, state.skills[current.skill].m - 0.1);
-    save(); toast("Am simplificat puțin."); newRound();
+    const sk = state.skills[current.skill];
+    if(sk) { sk.m = Math.max(0.1, sk.m - 0.1); save(); }
+    toast("Am simplificat puțin."); newRound();
   }
 
-  // --- SAFE HTML GENERATION ---
   function getDots(n) {
     let s=''; for(let i=0;i<n;i++) s+='<div class="d-pt"></div>'; return s;
   }
@@ -399,12 +415,10 @@ const app = (() => {
     const body = document.getElementById('uiProblem');
     let h = "";
     
-    // 1. Viz
     if(p.viz === 'tenframe') h += `<div class="viz-area">${getFrame(p.a)}</div>`;
     else if(p.viz === 'dots_only') h += `<div class="viz-area"><div class="dot-group">${getDots(p.a)}</div></div>`;
     else if(p.viz === 'dots_help') h += `<div class="viz-area"><div class="dot-group">${getDots(p.a)}</div><div style="width:20px"></div><div class="dot-group">${getDots(p.b)}</div></div>`;
 
-    // 2. Eq
     const box = `<div id="ansBox" class="eqBox">?</div>`;
     if(p.type === 'cmp') h += `<div class="big-eq"><span>${p.a}</span>${box}<span>${p.b}</span></div>`;
     else if(p.mode === 'missing') h += `<div class="big-eq"><span>${p.a}</span><span>${p.op}</span>${box}<span>=</span><span>${p.b}</span></div>`;
@@ -446,7 +460,7 @@ const app = (() => {
     const skBox = document.getElementById('uiSkills'); skBox.innerHTML = "";
     const list = state.settings.level===1?['add1','sub1','mk10','cnt','cmp1']:['add2','sub2','cmp2'];
     list.forEach(k=>{
-      if(state.skills[k]) { // Safe check
+      if(state.skills[k]) {
         const pct=Math.round(state.skills[k].m*100);
         skBox.innerHTML += `<div class="skill-item"><div class="skill-top"><span>${state.skills[k].n}</span><span>${pct}%</span></div><div class="meter"><div class="fill" style="width:${pct}%"></div></div></div>`;
       }
@@ -458,7 +472,7 @@ const app = (() => {
     toggleSound:()=>{state.settings.sound=SFX.toggle(); renderStats();},
     makeEasier, newRound,
     parentGate:()=>{ document.getElementById('pinMsg').innerText=""; document.getElementById('pinInput').value=""; document.getElementById('pinDlg').showModal(); setTimeout(()=>document.getElementById('pinInput').focus(),100); },
-    resetAll:()=>{ if(confirm("Ștergi tot?")) { localStorage.removeItem(KEY); localStorage.removeItem(KEY_LEGACY); location.reload(); } },
+    resetAll:()=>{ if(confirm("Ștergi tot?")) { localStorage.clear(); location.reload(); } },
     giveCoins:()=>{ state.economy.coins+=50; save(); renderStats(); toast("+50 🪙"); },
     changePin:async()=>{ const p=prompt("PIN Nou:"); if(p&&p.length>=4){ state.security.salt=SEC.salt(); state.security.hash=await SEC.hash(p,state.security.salt); save(); toast("PIN Schimbat"); } },
     exportData:()=>{ document.getElementById('stateDump').value=JSON.stringify(state,null,2); const b=new Blob([JSON.stringify(state)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='marclab_v2.json'; a.click(); },
