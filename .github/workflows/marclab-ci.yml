@@ -1,0 +1,13 @@
+name: marclab-ci
+on: [push, pull_request]
+
+jobs:
+  sanity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ensure entrypoints exist
+        run: |
+          test -f index.html
+          test -f plusminus/index.html
