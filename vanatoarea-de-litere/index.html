@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Marc — Vânătoarea de Litere</title>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700&display=swap');
+
+    :root{
+      --sky1:#7dd3fc; --sky2:#e0f2fe; --grass:#22c55e;
+      --card: rgba(0,0,0,.22);
+      --text:#0b1220; --white:#fff;
+      --good:#16a34a; --bad:#ef4444; --gold:#f59e0b;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body{
+      margin:0;
+      font-family:'Quicksand', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: linear-gradient(to bottom, var(--sky1) 0%, var(--sky2) 45%, var(--grass) 100%);
+      overflow:hidden;
+
+      /* iOS safe area */
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+
+      /* core mobile sizing fix */
+      height: 100dvh;
+      min-height: 100dvh;
+
+      touch-action: none;
+      user-select:none;
+    }
+
+    #topbar{
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      display:flex;
+      gap: 10px;
+      align-items:center;
+      justify-content:space-between;
+      padding: 10px 12px;
+      z-index: 30;
+      pointer-events:none;
+    }
+
+    .pill{
+      pointer-events:none;
+      background: var(--card);
+      color: var(--white);
+      border: 2px solid rgba(255,255,255,.55);
+      border-radius: 999px;
+      padding: 8px 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,.2);
+      backdrop-filter: blur(6px);
+      font-weight: 800;
+      font-size: clamp(14px, 2.6vw, 18px);
+      line-height: 1;
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      white-space: nowrap;
+    }
+
+    #title{
+      pointer-events:none;
+      font-weight: 900;
+      color: #0b1220;
+      text-shadow: 0 2px 0 rgba(255,255,255,.8);
+      font-size: clamp(16px, 3.2vw, 22px);
+    }
+
+    #game{
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+
+    .item{
+      position:absolute;
+      top: -90px;
+      font-size: clamp(52px, 9vw, 80px);
+      filter: drop-shadow(0 10px 18px rgba(0,0,0,.22));
+      animation: fall linear forwards;
+      -webkit-tap-highlight-color: transparent;
+      cursor: pointer;
+      z-index: 10;
+    }
+
+    .letter{
+      font-weight: 900;
+      color: #111827;
+      text-shadow: 0 3px 0 rgba(255,255,255,.85);
+      padding: 6px 14px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.75);
+      border: 3px solid rgba(0,0,0,.12);
+      font-size: clamp(46px, 8.5vw, 74px);
+    }
+
+    .bad{
+      filter: drop-shadow(0 10px 18px rgba(239,68,68,.25));
+    }
+
+    @keyframes fall{
+      to { transform: translateY(120dvh) rotate(360deg); }
+    }
+
+    .floating{
+      position:absolute;
+      z-index: 40;
+      font-weight: 900;
+      font-size: clamp(16px, 3.2vw, 22px);
+      pointer-events:none;
+      text-shadow: 0 2px 0 rgba(255,255,255,.85);
+      animation: floatUp .9s ease-out forwards;
+      white-space: nowrap;
+    }
+    @keyframes floatUp{
+      0%{ transform: translateY(0) scale(1); opacity:1; }
+      100%{ transform: translateY(-55px) scale(1.25); opacity:0; }
+    }
+
+    /* soft glow instead of white flash */
+    #glow{
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at 50% 45%, rgba(245,158,11,.35), rgba(34,197,94,.18), rgba(0,0,0,0));
+      opacity:0;
+      pointer-events:none;
+      transition: opacity .18s ease;
+      z-index: 25;
+    }
+
+    .modal{
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.78);
+      backdrop-filter: blur(6px);
+      z-index: 100;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding: 20px;
+    }
+    .card{
+      width: min(520px, 92vw);
+      background: rgba(255,255,255,.92);
+      border-radius: 22px;
+      padding: 18px 18px 16px;
+      box-shadow: 0 30px 80px rgba(0,0,0,.35);
+      border: 2px solid rgba(255,255,255,.7);
+      text-align:center;
+    }
+    .card h2{
+      margin: 6px 0 8px;
+      font-size: clamp(22px, 4vw, 30px);
+    }
+    .card p{
+      margin: 8px 0;
+      color: #111827;
+      font-weight: 700;
+      font-size: clamp(14px, 2.8vw, 18px);
+    }
+
+    .actions{
+      display:flex;
+      gap: 10px;
+      justify-content:center;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    button{
+      appearance:none;
+      border:none;
+      padding: 14px 18px;
+      border-radius: 999px;
+      font-weight: 900;
+      cursor:pointer;
+      font-size: clamp(15px, 3vw, 18px);
+      box-shadow: 0 14px 30px rgba(0,0,0,.25);
+      transform: translateZ(0);
+    }
+    button:active{ transform: scale(.97); }
+    .primary{ background:#22c55e; color:white; }
+    .secondary{ background:#111827; color:white; }
+    .ghost{ background: rgba(17,24,39,.08); color:#111827; border:2px solid rgba(17,24,39,.16); }
+
+    .hidden{ display:none !important; }
+    .tiny{
+      font-size: 12px;
+      color: rgba(17,24,39,.75);
+      font-weight: 800;
+      margin-top: 10px;
+    }
+
+    .lettersRow{
+      display:flex;
+      justify-content:center;
+      gap: 10px;
+      margin: 10px 0 4px;
+      font-size: 20px;
+      font-weight: 900;
+    }
+    .badge{
+      padding: 6px 10px;
+      border-radius: 14px;
+      background: rgba(17,24,39,.06);
+      border: 2px solid rgba(17,24,39,.10);
+      min-width: 44px;
+    }
+    .ok{ background: rgba(34,197,94,.16); border-color: rgba(34,197,94,.35); }
+  </style>
+</head>
+
+<body>
+  <div id="glow"></div>
+
+  <div id="topbar">
+    <div id="title">🦖 Marc — Vânătoarea de Litere</div>
+    <div class="pill" id="hud">MARC: ⬜ ⬜ ⬜ ⬜</div>
+  </div>
+
+  <div id="game"></div>
+
+  <div id="start" class="modal">
+    <div class="card">
+      <h2>Salut, Marc! 🧩</h2>
+      <p>Prinde literele din numele tău: <b>M</b> <b>A</b> <b>R</b> <b>C</b></p>
+      <p>✅ Litere = super! &nbsp;&nbsp; ⚠️ Nor/ploaie = pierzi puțin</p>
+
+      <div class="actions">
+        <button class="primary" id="btnStart">Start!</button>
+        <button class="ghost" id="btnSound">🔊 Sunet: OFF</button>
+      </div>
+      <div class="tiny">Tip: pe telefon e mai ușor dacă atingi cu degetul mare 👆</div>
+    </div>
+  </div>
+
+  <div id="end" class="modal hidden">
+    <div class="card">
+      <h2>BRAVO! 🏅</h2>
+      <p>Ai găsit toate literele din <b>MARC</b>!</p>
+      <p id="timeStat"></p>
+
+      <div class="actions">
+        <button class="primary" id="btnAgain">Mai o dată!</button>
+        <button class="secondary" id="btnClose">Închide</button>
+      </div>
+      <div class="tiny">Bonus: putem face și „Nivel 2” cu cifre 1–10 😄</div>
+    </div>
+  </div>
+
+  <script>
+    const game = document.getElementById('game');
+    const hud  = document.getElementById('hud');
+    const glow = document.getElementById('glow');
+
+    const startModal = document.getElementById('start');
+    const endModal   = document.getElementById('end');
+    const timeStat   = document.getElementById('timeStat');
+
+    const btnStart = document.getElementById('btnStart');
+    const btnAgain = document.getElementById('btnAgain');
+    const btnClose = document.getElementById('btnClose');
+    const btnSound = document.getElementById('btnSound');
+
+    // gameplay tuning for ~4.8y
+    const SPAWN_MS = 950;         // slower than 700ms
+    const FALL_MIN = 4.0;         // seconds
+    const FALL_MAX = 6.0;         // seconds
+    const MAX_ONSCREEN = 12;
+
+    const letters = ['M','A','R','C'];
+    let found = { M:false, A:false, R:false, C:false };
+
+    const goodEmojis = ['🦖','🚀','⭐','🌈','🍄','🌲'];
+    const badEmojis  = ['🌧️','☁️','⛈️'];
+
+    const praise = ["Super! ✨", "Bravo! 🏅", "High-five! 🖐️", "Ești tare! 💪", "Perfect! 😄"];
+
+    let active = false;
+    let spawnTimer = null;
+    let startTime = 0;
+
+    // optional tiny sounds (WebAudio)
+    let soundOn = false;
+    let audioCtx = null;
+
+    function ensureAudio(){
+      if (!audioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (AC) audioCtx = new AC();
+      }
+    }
+    function beep(freq=660, ms=70){
+      if (!soundOn) return;
+      ensureAudio();
+      if (!audioCtx) return;
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.frequency.value = freq;
+      o.type = 'sine';
+      g.gain.value = 0.04;
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start();
+      setTimeout(()=>{ o.stop(); }, ms);
+    }
+
+    function resetState(){
+      found = { M:false, A:false, R:false, C:false };
+      updateHud();
+      game.querySelectorAll('.item, .floating').forEach(el => el.remove());
+    }
+
+    function updateHud(){
+      const boxes = letters.map(ch => found[ch] ? '✅' : '⬜').join(' ');
+      hud.textContent = `MARC: ${boxes}`;
+    }
+
+    function allFound(){
+      return letters.every(ch => found[ch]);
+    }
+
+    function clamp(v, min, max){ return Math.max(min, Math.min(max, v)); }
+
+    function showFloating(x, y, text, color){
+      const el = document.createElement('div');
+      el.className = 'floating';
+      el.textContent = text;
+      el.style.color = color;
+
+      // clamp inside viewport
+      const pad = 10;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const left = clamp(x - 40, pad, vw - 120);
+      const top  = clamp(y - 60, pad + 60, vh - 120);
+      el.style.left = left + 'px';
+      el.style.top  = top + 'px';
+
+      game.appendChild(el);
+      setTimeout(()=> el.remove(), 900);
+    }
+
+    function glowPulse(){
+      glow.style.opacity = '1';
+      setTimeout(()=> glow.style.opacity = '0', 180);
+    }
+
+    function burstConfetti(){
+      confetti({ particleCount: 70, spread: 70, startVelocity: 35, origin: { y: 0.6 } });
+    }
+
+    function spawn(){
+      if (!active) return;
+      if (game.querySelectorAll('.item').length >= MAX_ONSCREEN) return;
+
+      const el = document.createElement('div');
+      el.className = 'item';
+
+      const r = Math.random();
+      let type = 'good';
+      let payload = '';
+
+      // probabilities tuned for kids: more letters, fewer bad
+      if (r < 0.62) {
+        type = 'letter';
+        payload = letters[Math.floor(Math.random() * letters.length)];
+        el.classList.add('letter');
+        el.textContent = payload;
+        el.dataset.letter = payload;
+      } else if (r < 0.76) {
+        type = 'bad';
+        payload = badEmojis[Math.floor(Math.random() * badEmojis.length)];
+        el.classList.add('bad');
+        el.textContent = payload;
+        el.dataset.type = 'bad';
+      } else {
+        type = 'good';
+        payload = goodEmojis[Math.floor(Math.random() * goodEmojis.length)];
+        el.textContent = payload;
+        el.dataset.type = 'good';
+      }
+
+      // position (avoid edges a bit)
+      const leftPct = Math.random() * 78 + 11; // 11%..89%
+      el.style.left = leftPct + '%';
+
+      // fall duration
+      const dur = (Math.random() * (FALL_MAX - FALL_MIN) + FALL_MIN).toFixed(2);
+      el.style.animationDuration = dur + 's';
+
+      el.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const x = e.clientX;
+        const y = e.clientY;
+        catchItem(el, x, y);
+      });
+
+      game.appendChild(el);
+
+      setTimeout(()=> {
+        if (el.parentNode) el.remove();
+      }, Number(dur) * 1000);
+    }
+
+    function catchItem(el, x, y){
+      if (!active) return;
+
+      // stop animation to avoid "jump" when we change transform
+      el.style.animation = 'none';
+
+      if (el.classList.contains('letter')) {
+        const ch = el.dataset.letter;
+        if (!found[ch]) {
+          found[ch] = true;
+          updateHud();
+          glowPulse();
+          burstConfetti();
+          beep(880, 70);
+          showFloating(x, y, `+ ${ch} ✅`, 'var(--good)');
+        } else {
+          beep(600, 55);
+          showFloating(x, y, "Avem deja 😄", '#0b1220');
+        }
+      } else if (el.dataset.type === 'bad') {
+        beep(220, 90);
+        showFloating(x, y, "Ups! ☔", 'var(--bad)');
+      } else {
+        beep(720, 50);
+        const msg = praise[Math.floor(Math.random()*praise.length)];
+        showFloating(x, y, msg, '#0b1220');
+      }
+
+      el.style.transition = 'transform 120ms ease, opacity 120ms ease';
+      el.style.transform = 'scale(1.35)';
+      el.style.opacity = '0';
+      setTimeout(()=> { if (el.parentNode) el.remove(); }, 130);
+
+      if (allFound()) endGame();
+    }
+
+    function startGame(){
+      resetState();
+      active = true;
+      startTime = Date.now();
+      startModal.classList.add('hidden');
+      endModal.classList.add('hidden');
+
+      if (spawnTimer) clearInterval(spawnTimer);
+      spawnTimer = setInterval(spawn, SPAWN_MS);
+    }
+
+    function endGame(){
+      active = false;
+      if (spawnTimer) clearInterval(spawnTimer);
+      game.querySelectorAll('.item').forEach(el => el.remove());
+
+      const sec = Math.max(1, Math.round((Date.now() - startTime) / 1000));
+      timeStat.textContent = `Timp: ${sec} secunde ⏱️`;
+
+      // celebratory confetti (simple + bounded)
+      const t0 = Date.now();
+      const interval = setInterval(() => {
+        confetti({ particleCount: 45, spread: 90, startVelocity: 28, origin: { x: Math.random(), y: Math.random()*0.4 + 0.2 } });
+        if (Date.now() - t0 > 1800) clearInterval(interval);
+      }, 220);
+
+      setTimeout(()=> endModal.classList.remove('hidden'), 250);
+    }
+
+    // pause when tab is hidden (saves battery + avoids surprise spawn)
+    document.addEventListener('visibilitychange', () => {
+      if (!active) return;
+      if (document.hidden) {
+        if (spawnTimer) clearInterval(spawnTimer);
+      } else {
+        if (spawnTimer) clearInterval(spawnTimer);
+        spawnTimer = setInterval(spawn, SPAWN_MS);
+      }
+    });
+
+    btnStart.addEventListener('click', () => startGame());
+    btnAgain.addEventListener('click', () => startGame());
+    btnClose.addEventListener('click', () => endModal.classList.add('hidden'));
+
+    btnSound.addEventListener('click', () => {
+      soundOn = !soundOn;
+      btnSound.textContent = soundOn ? '🔊 Sunet: ON' : '🔊 Sunet: OFF';
+      // create audio context on user gesture
+      if (soundOn) ensureAudio();
+    });
+  </script>
+</body>
+</html>
