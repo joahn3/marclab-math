@@ -16,8 +16,27 @@ jobs:
           test -f index.html
           test -f plusminus/index.html
 
-      - name: Install dev tools
+      - name: Install deps
         run: npm install
 
       - name: Lint (HTML/CSS/JS)
         run: npm run lint
+
+  smoke:
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install deps
+        run: npm install
+
+      - name: Install Playwright browser (Chromium)
+        run: npx playwright install --with-deps chromium
+
+      - name: Smoke test (headless Chrome)
+        run: npm run test:smoke
