@@ -3,25 +3,27 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Marc — Vânătoarea de Litere</title>
+  <title>Marc — Level Quest</title>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700;900&display=swap');
 
     :root{
-      --sky1:#7dd3fc; --sky2:#e0f2fe; --grass:#22c55e;
-      --card: rgba(0,0,0,.22);
-      --text:#0b1220; --white:#fff;
-      --good:#16a34a; --bad:#ef4444; --gold:#f59e0b;
+      --bg1:#7dd3fc; --bg2:#e0f2fe; --bg3:#22c55e;
+      --ink:#0b1220; --white:#fff;
+      --glass: rgba(0,0,0,.22);
+      --stroke: rgba(255,255,255,.55);
+      --shadow: 0 18px 45px rgba(0,0,0,.28);
+      --good:#16a34a; --bad:#ef4444; --gold:#f59e0b; --muted: rgba(17,24,39,.7);
     }
 
-    * { box-sizing: border-box; }
+    *{ box-sizing: border-box; }
     html, body { height: 100%; }
     body{
       margin:0;
-      font-family:'Quicksand', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background: linear-gradient(to bottom, var(--sky1) 0%, var(--sky2) 45%, var(--grass) 100%);
+      font-family: 'Quicksand', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: linear-gradient(to bottom, var(--bg1) 0%, var(--bg2) 45%, var(--bg3) 100%);
       overflow:hidden;
 
       /* iOS safe area */
@@ -30,53 +32,82 @@
       padding-left: env(safe-area-inset-left);
       padding-right: env(safe-area-inset-right);
 
-      /* core mobile sizing fix */
       height: 100dvh;
       min-height: 100dvh;
-
       touch-action: none;
       user-select:none;
+      color: var(--ink);
     }
 
+    /* soft glow on success */
+    #glow{
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at 50% 45%,
+        rgba(245,158,11,.35),
+        rgba(34,197,94,.18),
+        rgba(0,0,0,0));
+      opacity:0;
+      pointer-events:none;
+      transition: opacity .18s ease;
+      z-index: 25;
+    }
+
+    /* topbar */
     #topbar{
       position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
+      top: 0; left: 0; right: 0;
+      z-index: 40;
       display:flex;
-      gap: 10px;
       align-items:center;
       justify-content:space-between;
+      gap: 10px;
       padding: 10px 12px;
-      z-index: 30;
-      pointer-events:none;
     }
 
-    .pill{
-      pointer-events:none;
-      background: var(--card);
-      color: var(--white);
-      border: 2px solid rgba(255,255,255,.55);
-      border-radius: 999px;
-      padding: 8px 12px;
-      box-shadow: 0 10px 25px rgba(0,0,0,.2);
-      backdrop-filter: blur(6px);
-      font-weight: 800;
-      font-size: clamp(14px, 2.6vw, 18px);
-      line-height: 1;
-      display:flex;
-      align-items:center;
-      gap: 10px;
+    #brand{
+      font-weight: 900;
+      font-size: clamp(16px, 3.2vw, 22px);
+      text-shadow: 0 2px 0 rgba(255,255,255,.85);
       white-space: nowrap;
     }
 
-    #title{
-      pointer-events:none;
-      font-weight: 900;
-      color: #0b1220;
-      text-shadow: 0 2px 0 rgba(255,255,255,.8);
-      font-size: clamp(16px, 3.2vw, 22px);
+    .hud{
+      display:flex;
+      align-items:center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content:flex-end;
     }
+
+    .pill{
+      background: var(--glass);
+      color: var(--white);
+      border: 2px solid var(--stroke);
+      border-radius: 999px;
+      padding: 8px 12px;
+      box-shadow: 0 12px 25px rgba(0,0,0,.2);
+      backdrop-filter: blur(6px);
+      font-weight: 900;
+      font-size: clamp(13px, 2.6vw, 17px);
+      line-height: 1;
+      display:flex;
+      align-items:center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+
+    .iconbtn{
+      border:none;
+      cursor:pointer;
+      border-radius: 999px;
+      padding: 8px 10px;
+      font-weight: 900;
+      font-size: clamp(13px, 2.6vw, 16px);
+      background: rgba(255,255,255,.85);
+      box-shadow: 0 10px 20px rgba(0,0,0,.18);
+    }
+    .iconbtn:active{ transform: scale(.98); }
 
     #game{
       position: relative;
@@ -84,98 +115,130 @@
       height: 100%;
     }
 
+    /* falling items */
     .item{
       position:absolute;
-      top: -90px;
-      font-size: clamp(52px, 9vw, 80px);
-      filter: drop-shadow(0 10px 18px rgba(0,0,0,.22));
+      top: -100px;
+      filter: drop-shadow(0 14px 20px rgba(0,0,0,.22));
       animation: fall linear forwards;
       -webkit-tap-highlight-color: transparent;
       cursor: pointer;
       z-index: 10;
     }
 
-    .letter{
-      font-weight: 900;
-      color: #111827;
-      text-shadow: 0 3px 0 rgba(255,255,255,.85);
-      padding: 6px 14px;
-      border-radius: 18px;
-      background: rgba(255,255,255,.75);
-      border: 3px solid rgba(0,0,0,.12);
-      font-size: clamp(46px, 8.5vw, 74px);
-    }
-
-    .bad{
-      filter: drop-shadow(0 10px 18px rgba(239,68,68,.25));
-    }
-
     @keyframes fall{
       to { transform: translateY(120dvh) rotate(360deg); }
     }
 
+    /* token styles */
+    .token{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width: 64px;
+      min-height: 64px;
+      padding: 10px 16px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.78);
+      border: 3px solid rgba(0,0,0,.10);
+      font-weight: 1000;
+      font-size: clamp(40px, 8vw, 66px);
+      color: #111827;
+      text-shadow: 0 3px 0 rgba(255,255,255,.9);
+    }
+
+    .emoji{
+      font-size: clamp(56px, 10vw, 86px);
+    }
+
+    .colorDot{
+      width: clamp(64px, 10vw, 88px);
+      height: clamp(64px, 10vw, 88px);
+      border-radius: 999px;
+      border: 6px solid rgba(255,255,255,.9);
+      box-shadow: 0 10px 22px rgba(0,0,0,.2);
+      background: var(--c, #60a5fa);
+    }
+
+    .shapeToken{
+      width: clamp(74px, 11vw, 98px);
+      height: clamp(74px, 11vw, 98px);
+      border-radius: 22px;
+      border: 6px solid rgba(255,255,255,.9);
+      box-shadow: 0 10px 22px rgba(0,0,0,.2);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background: rgba(255,255,255,.35);
+      font-size: clamp(44px, 8.5vw, 70px);
+      font-weight: 1000;
+      color: #111827;
+      text-shadow: 0 3px 0 rgba(255,255,255,.9);
+    }
+
+    /* floating feedback */
     .floating{
       position:absolute;
-      z-index: 40;
-      font-weight: 900;
+      z-index: 50;
+      font-weight: 1000;
       font-size: clamp(16px, 3.2vw, 22px);
       pointer-events:none;
-      text-shadow: 0 2px 0 rgba(255,255,255,.85);
+      text-shadow: 0 2px 0 rgba(255,255,255,.9);
       animation: floatUp .9s ease-out forwards;
       white-space: nowrap;
     }
+
     @keyframes floatUp{
       0%{ transform: translateY(0) scale(1); opacity:1; }
       100%{ transform: translateY(-55px) scale(1.25); opacity:0; }
     }
 
-    /* soft glow instead of white flash */
-    #glow{
-      position: fixed;
-      inset: 0;
-      background: radial-gradient(circle at 50% 45%, rgba(245,158,11,.35), rgba(34,197,94,.18), rgba(0,0,0,0));
-      opacity:0;
-      pointer-events:none;
-      transition: opacity .18s ease;
-      z-index: 25;
-    }
-
+    /* modals */
     .modal{
       position: fixed;
       inset: 0;
       background: rgba(0,0,0,.78);
-      backdrop-filter: blur(6px);
+      backdrop-filter: blur(7px);
       z-index: 100;
       display:flex;
       align-items:center;
       justify-content:center;
       padding: 20px;
     }
+
     .card{
-      width: min(520px, 92vw);
+      width: min(720px, 94vw);
       background: rgba(255,255,255,.92);
-      border-radius: 22px;
-      padding: 18px 18px 16px;
-      box-shadow: 0 30px 80px rgba(0,0,0,.35);
-      border: 2px solid rgba(255,255,255,.7);
-      text-align:center;
+      border-radius: 24px;
+      padding: 16px;
+      box-shadow: 0 30px 90px rgba(0,0,0,.35);
+      border: 2px solid rgba(255,255,255,.75);
     }
+
+    .cardHeader{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
     .card h2{
-      margin: 6px 0 8px;
+      margin: 6px 0 6px;
       font-size: clamp(22px, 4vw, 30px);
     }
     .card p{
-      margin: 8px 0;
-      color: #111827;
-      font-weight: 700;
+      margin: 6px 0;
       font-size: clamp(14px, 2.8vw, 18px);
+      font-weight: 800;
+      color: #111827;
     }
 
     .actions{
       display:flex;
+      flex-wrap: wrap;
       gap: 10px;
       justify-content:center;
-      flex-wrap: wrap;
       margin-top: 12px;
     }
 
@@ -184,7 +247,7 @@
       border:none;
       padding: 14px 18px;
       border-radius: 999px;
-      font-weight: 900;
+      font-weight: 1000;
       cursor:pointer;
       font-size: clamp(15px, 3vw, 18px);
       box-shadow: 0 14px 30px rgba(0,0,0,.25);
@@ -195,30 +258,136 @@
     .secondary{ background:#111827; color:white; }
     .ghost{ background: rgba(17,24,39,.08); color:#111827; border:2px solid rgba(17,24,39,.16); }
 
-    .hidden{ display:none !important; }
     .tiny{
       font-size: 12px;
-      color: rgba(17,24,39,.75);
-      font-weight: 800;
+      color: rgba(17,24,39,.72);
+      font-weight: 900;
       margin-top: 10px;
+      text-align:center;
     }
 
-    .lettersRow{
-      display:flex;
-      justify-content:center;
-      gap: 10px;
-      margin: 10px 0 4px;
-      font-size: 20px;
-      font-weight: 900;
+    .hidden{ display:none !important; }
+
+    /* Level map grid */
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(1, 1fr);
+      gap: 12px;
+      margin-top: 10px;
     }
-    .badge{
+    @media (min-width: 640px){
+      .grid{ grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (min-width: 980px){
+      .grid{ grid-template-columns: repeat(3, 1fr); }
+    }
+
+    .levelCard{
+      background: rgba(255,255,255,.85);
+      border: 2px solid rgba(17,24,39,.10);
+      border-radius: 20px;
+      padding: 12px;
+      box-shadow: 0 14px 35px rgba(0,0,0,.12);
+      display:flex;
+      flex-direction:column;
+      gap: 8px;
+      position: relative;
+      overflow:hidden;
+    }
+
+    .levelTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+    }
+
+    .levelTitle{
+      font-weight: 1000;
+      font-size: 18px;
+      display:flex;
+      align-items:center;
+      gap: 10px;
+    }
+    .levelMeta{
+      font-weight: 900;
+      font-size: 13px;
+      color: rgba(17,24,39,.75);
+    }
+
+    .badgeRow{
+      display:flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items:center;
+    }
+
+    .chip{
       padding: 6px 10px;
-      border-radius: 14px;
+      border-radius: 999px;
+      font-weight: 1000;
+      font-size: 12px;
       background: rgba(17,24,39,.06);
       border: 2px solid rgba(17,24,39,.10);
-      min-width: 44px;
+      color: rgba(17,24,39,.85);
     }
-    .ok{ background: rgba(34,197,94,.16); border-color: rgba(34,197,94,.35); }
+
+    .chip.ok{ background: rgba(34,197,94,.14); border-color: rgba(34,197,94,.30); }
+    .chip.lock{ background: rgba(239,68,68,.10); border-color: rgba(239,68,68,.22); }
+
+    .levelBtn{
+      margin-top: 6px;
+      width: 100%;
+    }
+
+    .lockOverlay{
+      position:absolute;
+      inset:0;
+      background: linear-gradient(135deg, rgba(0,0,0,.55), rgba(0,0,0,.35));
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:white;
+      font-weight: 1000;
+      font-size: 18px;
+      gap: 10px;
+    }
+
+    /* Trophy list */
+    .trophyList{
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
+      margin-top: 10px;
+      max-height: min(60dvh, 420px);
+      overflow:auto;
+      padding-right: 4px;
+    }
+    .trophyItem{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.85);
+      border: 2px solid rgba(17,24,39,.10);
+    }
+    .trophyLeft{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+    }
+    .trophyIcon{ font-size: 28px; }
+    .trophyName{ font-weight: 1000; }
+    .trophyMeta{ font-weight: 900; font-size: 12px; color: rgba(17,24,39,.70); }
+
+    /* reduced motion */
+    @media (prefers-reduced-motion: reduce){
+      .item{ animation: none !important; }
+      .floating{ animation: none !important; }
+      #glow{ transition: none !important; }
+    }
   </style>
 </head>
 
@@ -226,281 +395,834 @@
   <div id="glow"></div>
 
   <div id="topbar">
-    <div id="title">🦖 Marc — Vânătoarea de Litere</div>
-    <div class="pill" id="hud">MARC: ⬜ ⬜ ⬜ ⬜</div>
+    <div id="brand">🗺️ Marc — Level Quest</div>
+    <div class="hud">
+      <div class="pill" id="hudText">Alege un nivel 🎯</div>
+      <button class="iconbtn" id="btnTrophies" title="Trofee">🏅</button>
+      <button class="iconbtn" id="btnSound" title="Sunet">🔊 OFF</button>
+      <button class="iconbtn" id="btnHome" title="Harta">🗺️</button>
+    </div>
   </div>
 
   <div id="game"></div>
 
-  <div id="start" class="modal">
+  <!-- LEVEL MAP -->
+  <div id="mapModal" class="modal">
     <div class="card">
-      <h2>Salut, Marc! 🧩</h2>
-      <p>Prinde literele din numele tău: <b>M</b> <b>A</b> <b>R</b> <b>C</b></p>
-      <p>✅ Litere = super! &nbsp;&nbsp; ⚠️ Nor/ploaie = pierzi puțin</p>
-
-      <div class="actions">
-        <button class="primary" id="btnStart">Start!</button>
-        <button class="ghost" id="btnSound">🔊 Sunet: OFF</button>
+      <div class="cardHeader">
+        <div>
+          <h2 style="margin:0">Harta Nivelurilor 🧩</h2>
+          <p style="margin:6px 0 0">Câștigă o medalie pe fiecare nivel: <b>5/5</b> 🏅</p>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <button class="ghost" id="btnReset">Reset progres</button>
+          <button class="secondary" id="btnCloseMap">Închide</button>
+        </div>
       </div>
-      <div class="tiny">Tip: pe telefon e mai ușor dacă atingi cu degetul mare 👆</div>
+
+      <div class="grid" id="levelGrid"></div>
+      <div class="tiny">Tip: Nivelul 2 (1–10) e „în ordine” — perfect pentru 4–5 ani 🔢</div>
     </div>
   </div>
 
-  <div id="end" class="modal hidden">
-    <div class="card">
-      <h2>BRAVO! 🏅</h2>
-      <p>Ai găsit toate literele din <b>MARC</b>!</p>
-      <p id="timeStat"></p>
-
+  <!-- END / WIN -->
+  <div id="endModal" class="modal hidden">
+    <div class="card" style="text-align:center;">
+      <h2 id="endTitle" style="margin:6px 0 8px;">BRAVO! 🏅</h2>
+      <p id="endMsg" style="margin:0 0 6px;">Ai terminat nivelul!</p>
+      <p id="endStats" style="margin:0 0 10px; color: rgba(17,24,39,.8);"></p>
       <div class="actions">
-        <button class="primary" id="btnAgain">Mai o dată!</button>
-        <button class="secondary" id="btnClose">Închide</button>
+        <button class="primary" id="btnNext">Următorul nivel ➡️</button>
+        <button class="ghost" id="btnReplay">Repetă nivelul 🔁</button>
+        <button class="secondary" id="btnBackToMap">Harta 🗺️</button>
       </div>
-      <div class="tiny">Bonus: putem face și „Nivel 2” cu cifre 1–10 😄</div>
+      <div class="tiny">Putem face și Level 6+ (silabe, cuvinte scurte, operații +/−) 😄</div>
     </div>
   </div>
 
-  <script>
-    const game = document.getElementById('game');
-    const hud  = document.getElementById('hud');
-    const glow = document.getElementById('glow');
+  <!-- TROPHIES -->
+  <div id="trophyModal" class="modal hidden">
+    <div class="card">
+      <div class="cardHeader">
+        <div>
+          <h2 style="margin:0">Album Trofee 🏅</h2>
+          <p style="margin:6px 0 0">Se salvează automat pe device (LocalStorage).</p>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button class="ghost" id="btnExportHint" title="LocalStorage e deja exportabil din devtools 🙂">Info</button>
+          <button class="secondary" id="btnCloseTrophies">Închide</button>
+        </div>
+      </div>
 
-    const startModal = document.getElementById('start');
-    const endModal   = document.getElementById('end');
-    const timeStat   = document.getElementById('timeStat');
+      <div class="trophyList" id="trophyList"></div>
 
-    const btnStart = document.getElementById('btnStart');
-    const btnAgain = document.getElementById('btnAgain');
-    const btnClose = document.getElementById('btnClose');
-    const btnSound = document.getElementById('btnSound');
+      <div class="actions">
+        <button class="ghost" id="btnReset2">Reset progres</button>
+        <button class="secondary" id="btnCloseTrophies2">Închide</button>
+      </div>
+    </div>
+  </div>
 
-    // gameplay tuning for ~4.8y
-    const SPAWN_MS = 950;         // slower than 700ms
-    const FALL_MIN = 4.0;         // seconds
-    const FALL_MAX = 6.0;         // seconds
-    const MAX_ONSCREEN = 12;
+<script>
+(() => {
+  const STORAGE_KEY = 'marc_level_quest_v1';
 
-    const letters = ['M','A','R','C'];
-    let found = { M:false, A:false, R:false, C:false };
+  const game = document.getElementById('game');
+  const glow = document.getElementById('glow');
 
-    const goodEmojis = ['🦖','🚀','⭐','🌈','🍄','🌲'];
-    const badEmojis  = ['🌧️','☁️','⛈️'];
+  const hudText = document.getElementById('hudText');
+  const btnTrophies = document.getElementById('btnTrophies');
+  const btnSound = document.getElementById('btnSound');
+  const btnHome = document.getElementById('btnHome');
 
-    const praise = ["Super! ✨", "Bravo! 🏅", "High-five! 🖐️", "Ești tare! 💪", "Perfect! 😄"];
+  const mapModal = document.getElementById('mapModal');
+  const levelGrid = document.getElementById('levelGrid');
+  const btnReset = document.getElementById('btnReset');
+  const btnCloseMap = document.getElementById('btnCloseMap');
 
-    let active = false;
-    let spawnTimer = null;
-    let startTime = 0;
+  const endModal = document.getElementById('endModal');
+  const endTitle = document.getElementById('endTitle');
+  const endMsg = document.getElementById('endMsg');
+  const endStats = document.getElementById('endStats');
+  const btnNext = document.getElementById('btnNext');
+  const btnReplay = document.getElementById('btnReplay');
+  const btnBackToMap = document.getElementById('btnBackToMap');
 
-    // optional tiny sounds (WebAudio)
-    let soundOn = false;
-    let audioCtx = null;
+  const trophyModal = document.getElementById('trophyModal');
+  const trophyList = document.getElementById('trophyList');
+  const btnCloseTrophies = document.getElementById('btnCloseTrophies');
+  const btnCloseTrophies2 = document.getElementById('btnCloseTrophies2');
+  const btnReset2 = document.getElementById('btnReset2');
+  const btnExportHint = document.getElementById('btnExportHint');
 
-    function ensureAudio(){
-      if (!audioCtx) {
-        const AC = window.AudioContext || window.webkitAudioContext;
-        if (AC) audioCtx = new AC();
-      }
+  // ======= tiny optional sound (WebAudio) =======
+  let soundOn = false;
+  let audioCtx = null;
+  function ensureAudio(){
+    if (!audioCtx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) audioCtx = new AC();
     }
-    function beep(freq=660, ms=70){
-      if (!soundOn) return;
-      ensureAudio();
-      if (!audioCtx) return;
-      const o = audioCtx.createOscillator();
-      const g = audioCtx.createGain();
-      o.frequency.value = freq;
-      o.type = 'sine';
-      g.gain.value = 0.04;
-      o.connect(g); g.connect(audioCtx.destination);
-      o.start();
-      setTimeout(()=>{ o.stop(); }, ms);
-    }
+  }
+  function beep(freq=660, ms=70){
+    if (!soundOn) return;
+    ensureAudio();
+    if (!audioCtx) return;
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.frequency.value = freq;
+    o.type = 'sine';
+    g.gain.value = 0.04;
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start();
+    setTimeout(()=>{ o.stop(); }, ms);
+  }
 
-    function resetState(){
-      found = { M:false, A:false, R:false, C:false };
-      updateHud();
-      game.querySelectorAll('.item, .floating').forEach(el => el.remove());
-    }
+  // ======= helper =======
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+  const nowISO = () => new Date().toISOString();
+  const fmtDate = (iso) => {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return d.toLocaleString('ro-RO', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+  };
 
-    function updateHud(){
-      const boxes = letters.map(ch => found[ch] ? '✅' : '⬜').join(' ');
-      hud.textContent = `MARC: ${boxes}`;
-    }
+  function glowPulse(){
+    glow.style.opacity = '1';
+    setTimeout(()=> glow.style.opacity = '0', 180);
+  }
 
-    function allFound(){
-      return letters.every(ch => found[ch]);
-    }
+  function confettiBurst(){
+    confetti({ particleCount: 80, spread: 80, startVelocity: 35, origin: { y: 0.65 } });
+  }
 
-    function clamp(v, min, max){ return Math.max(min, Math.min(max, v)); }
-
-    function showFloating(x, y, text, color){
-      const el = document.createElement('div');
-      el.className = 'floating';
-      el.textContent = text;
-      el.style.color = color;
-
-      // clamp inside viewport
-      const pad = 10;
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
-      const left = clamp(x - 40, pad, vw - 120);
-      const top  = clamp(y - 60, pad + 60, vh - 120);
-      el.style.left = left + 'px';
-      el.style.top  = top + 'px';
-
-      game.appendChild(el);
-      setTimeout(()=> el.remove(), 900);
-    }
-
-    function glowPulse(){
-      glow.style.opacity = '1';
-      setTimeout(()=> glow.style.opacity = '0', 180);
-    }
-
-    function burstConfetti(){
-      confetti({ particleCount: 70, spread: 70, startVelocity: 35, origin: { y: 0.6 } });
-    }
-
-    function spawn(){
-      if (!active) return;
-      if (game.querySelectorAll('.item').length >= MAX_ONSCREEN) return;
-
-      const el = document.createElement('div');
-      el.className = 'item';
-
-      const r = Math.random();
-      let type = 'good';
-      let payload = '';
-
-      // probabilities tuned for kids: more letters, fewer bad
-      if (r < 0.62) {
-        type = 'letter';
-        payload = letters[Math.floor(Math.random() * letters.length)];
-        el.classList.add('letter');
-        el.textContent = payload;
-        el.dataset.letter = payload;
-      } else if (r < 0.76) {
-        type = 'bad';
-        payload = badEmojis[Math.floor(Math.random() * badEmojis.length)];
-        el.classList.add('bad');
-        el.textContent = payload;
-        el.dataset.type = 'bad';
-      } else {
-        type = 'good';
-        payload = goodEmojis[Math.floor(Math.random() * goodEmojis.length)];
-        el.textContent = payload;
-        el.dataset.type = 'good';
-      }
-
-      // position (avoid edges a bit)
-      const leftPct = Math.random() * 78 + 11; // 11%..89%
-      el.style.left = leftPct + '%';
-
-      // fall duration
-      const dur = (Math.random() * (FALL_MAX - FALL_MIN) + FALL_MIN).toFixed(2);
-      el.style.animationDuration = dur + 's';
-
-      el.addEventListener('pointerdown', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const x = e.clientX;
-        const y = e.clientY;
-        catchItem(el, x, y);
+  function confettiParty(ms=1600){
+    const t0 = Date.now();
+    const iv = setInterval(() => {
+      confetti({
+        particleCount: 45,
+        spread: 90,
+        startVelocity: 28,
+        origin: { x: Math.random(), y: Math.random()*0.4 + 0.2 }
       });
+      if (Date.now() - t0 > ms) clearInterval(iv);
+    }, 220);
+  }
 
-      game.appendChild(el);
+  function showFloating(x, y, text, color){
+    const el = document.createElement('div');
+    el.className = 'floating';
+    el.textContent = text;
+    el.style.color = color;
+    const pad = 10;
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const left = clamp(x - 40, pad, vw - 140);
+    const top  = clamp(y - 60, pad + 60, vh - 140);
+    el.style.left = left + 'px';
+    el.style.top = top + 'px';
+    game.appendChild(el);
+    setTimeout(()=> el.remove(), 900);
+  }
 
-      setTimeout(()=> {
-        if (el.parentNode) el.remove();
-      }, Number(dur) * 1000);
+  // ======= Levels definition =======
+  const LEVELS = [
+    {
+      id: 'letters',
+      title: 'MARC',
+      icon: '🧩',
+      medal: '🥉',
+      desc: 'Prinde literele M A R C (orice ordine).',
+      mode: 'set',
+      targets: ['M','A','R','C'],
+      targetRenderer: (val) => {
+        const span = document.createElement('div');
+        span.className = 'token';
+        span.textContent = val;
+        return span;
+      },
+      spawn: { target: 0.62, bad: 0.14, fun: 0.24 }
+    },
+    {
+      id: 'numbers',
+      title: '1–10',
+      icon: '🔢',
+      medal: '🥈',
+      desc: 'Prinde numerele 1→10 în ordine.',
+      mode: 'sequence',
+      targets: ['1','2','3','4','5','6','7','8','9','10'],
+      targetRenderer: (val) => {
+        const span = document.createElement('div');
+        span.className = 'token';
+        span.textContent = val;
+        return span;
+      },
+      spawn: { target: 0.68, bad: 0.12, fun: 0.20 }
+    },
+    {
+      id: 'colors',
+      title: 'Culori',
+      icon: '🎨',
+      medal: '🥇',
+      desc: 'Prinde toate culorile: roșu, galben, verde, albastru, mov.',
+      mode: 'set',
+      targets: ['red','yellow','green','blue','purple'],
+      labels: { red:'Roșu', yellow:'Galben', green:'Verde', blue:'Albastru', purple:'Mov' },
+      targetRenderer: (val, level) => {
+        const dot = document.createElement('div');
+        dot.className = 'colorDot';
+        dot.style.setProperty('--c', colorHex(val));
+        dot.title = level.labels[val] || val;
+        return dot;
+      },
+      spawn: { target: 0.64, bad: 0.12, fun: 0.24 }
+    },
+    {
+      id: 'shapes',
+      title: 'Forme',
+      icon: '🔺',
+      medal: '🏅',
+      desc: 'Prinde toate formele: cerc, pătrat, triunghi, diamant, stea.',
+      mode: 'set',
+      targets: ['circle','square','triangle','diamond','star'],
+      labels: { circle:'Cerc', square:'Pătrat', triangle:'Triunghi', diamond:'Diamant', star:'Stea' },
+      targetRenderer: (val) => {
+        const box = document.createElement('div');
+        box.className = 'shapeToken';
+        box.textContent = shapeChar(val);
+        box.style.background = 'rgba(255,255,255,.35)';
+        return box;
+      },
+      spawn: { target: 0.62, bad: 0.14, fun: 0.24 }
+    },
+    {
+      id: 'animals',
+      title: 'Animale',
+      icon: '🦊',
+      medal: '🏆',
+      desc: 'Prinde animalele: câine, pisică, iepure, urs, vulpe.',
+      mode: 'set',
+      targets: ['dog','cat','rabbit','bear','fox'],
+      labels: { dog:'Câine', cat:'Pisică', rabbit:'Iepure', bear:'Urs', fox:'Vulpe' },
+      targetRenderer: (val) => {
+        const em = document.createElement('div');
+        em.className = 'emoji';
+        em.textContent = animalEmoji(val);
+        return em;
+      },
+      spawn: { target: 0.60, bad: 0.14, fun: 0.26 }
+    }
+  ];
+
+  const FUN_EMOJIS = ['🦖','🚀','⭐','🌈','🍄','🍓','🧃','⚡','🧠'];
+  const BAD_EMOJIS = ['🌧️','☁️','⛈️'];
+
+  const PRAISE = ["Super! ✨", "Bravo! 🏅", "High-five! 🖐️", "Ești tare! 💪", "Perfect! 😄", "Bun! 🔥"];
+
+  function shapeChar(v){
+    switch(v){
+      case 'circle': return '●';
+      case 'square': return '■';
+      case 'triangle': return '▲';
+      case 'diamond': return '◆';
+      case 'star': return '★';
+      default: return '✦';
+    }
+  }
+  function animalEmoji(v){
+    switch(v){
+      case 'dog': return '🐶';
+      case 'cat': return '🐱';
+      case 'rabbit': return '🐰';
+      case 'bear': return '🐻';
+      case 'fox': return '🦊';
+      default: return '🐾';
+    }
+  }
+  function colorHex(v){
+    switch(v){
+      case 'red': return '#ef4444';
+      case 'yellow': return '#f59e0b';
+      case 'green': return '#22c55e';
+      case 'blue': return '#3b82f6';
+      case 'purple': return '#a855f7';
+      default: return '#60a5fa';
+    }
+  }
+
+  // ======= Persistent state =======
+  const defaultState = () => ({
+    settings: { soundOn: false },
+    progress: {
+      levels: Object.fromEntries(LEVELS.map(l => [l.id, {
+        completed: false,
+        bestTime: null,
+        lastTime: null,
+        tries: 0,
+        lastPlayed: null
+      }]))
+    }
+  });
+
+  let state = loadState();
+
+  function loadState(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return defaultState();
+      const parsed = JSON.parse(raw);
+      // minimal migration safety
+      const base = defaultState();
+      const merged = {
+        settings: { ...base.settings, ...(parsed.settings || {}) },
+        progress: { levels: { ...base.progress.levels, ...((parsed.progress && parsed.progress.levels) || {}) } }
+      };
+      return merged;
+    }catch(e){
+      return defaultState();
+    }
+  }
+
+  function saveState(){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+  }
+
+  function resetProgress(){
+    state = defaultState();
+    soundOn = !!state.settings.soundOn;
+    syncSoundButton();
+    saveState();
+    renderMap();
+    renderTrophies();
+  }
+
+  // ======= Unlock logic =======
+  function isUnlocked(levelId){
+    const idx = LEVELS.findIndex(l => l.id === levelId);
+    if (idx === 0) return true;
+    const prev = LEVELS[idx - 1].id;
+    return !!state.progress.levels[prev]?.completed;
+  }
+
+  // ======= UI: Map =======
+  function renderMap(){
+    levelGrid.innerHTML = '';
+
+    LEVELS.forEach((lvl, idx) => {
+      const prog = state.progress.levels[lvl.id];
+      const unlocked = isUnlocked(lvl.id);
+
+      const card = document.createElement('div');
+      card.className = 'levelCard';
+
+      const top = document.createElement('div');
+      top.className = 'levelTop';
+
+      const title = document.createElement('div');
+      title.className = 'levelTitle';
+      title.innerHTML = `<span style="font-size:22px">${lvl.icon}</span> <span>${idx+1}. ${lvl.title}</span>`;
+
+      const meta = document.createElement('div');
+      meta.className = 'levelMeta';
+      const best = prog.bestTime ? `${prog.bestTime}s` : '—';
+      meta.textContent = `Best: ${best}`;
+
+      top.appendChild(title);
+      top.appendChild(meta);
+
+      const desc = document.createElement('div');
+      desc.style.fontWeight = '900';
+      desc.style.color = 'rgba(17,24,39,.78)';
+      desc.style.fontSize = '13px';
+      desc.textContent = lvl.desc;
+
+      const badges = document.createElement('div');
+      badges.className = 'badgeRow';
+
+      const chipStatus = document.createElement('div');
+      chipStatus.className = 'chip ' + (prog.completed ? 'ok' : (unlocked ? '' : 'lock'));
+      chipStatus.textContent = prog.completed ? `Medalie: ${lvl.medal}` : (unlocked ? 'Disponibil' : 'Blocat');
+      badges.appendChild(chipStatus);
+
+      const chipTries = document.createElement('div');
+      chipTries.className = 'chip';
+      chipTries.textContent = `Încercări: ${prog.tries || 0}`;
+      badges.appendChild(chipTries);
+
+      const chipLast = document.createElement('div');
+      chipLast.className = 'chip';
+      chipLast.textContent = `Ultima: ${fmtDate(prog.lastPlayed)}`;
+      badges.appendChild(chipLast);
+
+      const btn = document.createElement('button');
+      btn.className = 'primary levelBtn';
+      btn.textContent = unlocked ? (prog.completed ? 'Joacă din nou' : 'Start nivel') : 'Blocat';
+      btn.disabled = !unlocked;
+      btn.addEventListener('click', () => startLevel(lvl.id));
+
+      card.appendChild(top);
+      card.appendChild(desc);
+      card.appendChild(badges);
+      card.appendChild(btn);
+
+      if(!unlocked){
+        const lock = document.createElement('div');
+        lock.className = 'lockOverlay';
+        lock.innerHTML = `🔒 Blocat`;
+        card.appendChild(lock);
+      }
+
+      levelGrid.appendChild(card);
+    });
+
+    openMap(true);
+    setHudText('Alege un nivel 🎯');
+  }
+
+  function openMap(open){
+    mapModal.classList.toggle('hidden', !open);
+  }
+
+  // ======= UI: Trophies =======
+  function renderTrophies(){
+    trophyList.innerHTML = '';
+
+    LEVELS.forEach((lvl, idx) => {
+      const prog = state.progress.levels[lvl.id];
+      const row = document.createElement('div');
+      row.className = 'trophyItem';
+
+      const left = document.createElement('div');
+      left.className = 'trophyLeft';
+
+      const icon = document.createElement('div');
+      icon.className = 'trophyIcon';
+      icon.textContent = prog.completed ? lvl.medal : '⬜';
+
+      const text = document.createElement('div');
+      const name = document.createElement('div');
+      name.className = 'trophyName';
+      name.textContent = `${idx+1}. ${lvl.icon} ${lvl.title}`;
+
+      const meta = document.createElement('div');
+      meta.className = 'trophyMeta';
+      meta.textContent = `Best: ${prog.bestTime ? prog.bestTime+'s' : '—'} • Încercări: ${prog.tries || 0} • Ultima: ${fmtDate(prog.lastPlayed)}`;
+
+      text.appendChild(name);
+      text.appendChild(meta);
+
+      left.appendChild(icon);
+      left.appendChild(text);
+
+      const right = document.createElement('div');
+      right.style.fontWeight = '1000';
+      right.style.fontSize = '13px';
+      right.style.color = prog.completed ? 'rgba(34,197,94,.9)' : 'rgba(17,24,39,.55)';
+      right.textContent = prog.completed ? 'Câștigat ✅' : 'Încă nu';
+
+      row.appendChild(left);
+      row.appendChild(right);
+
+      trophyList.appendChild(row);
+    });
+  }
+
+  function openTrophies(open){
+    trophyModal.classList.toggle('hidden', !open);
+    if(open) renderTrophies();
+  }
+
+  // ======= Gameplay =======
+  let active = false;
+  let spawnTimer = null;
+  let startTime = 0;
+  let currentLevel = null;
+
+  // tuning for kids
+  const SPAWN_MS = 950;
+  const FALL_MIN = 4.0;
+  const FALL_MAX = 6.2;
+  const MAX_ONSCREEN = 12;
+
+  let collectedSet = new Set();
+  let seqIndex = 0;
+
+  function cleanupField(){
+    game.querySelectorAll('.item, .floating').forEach(el => el.remove());
+  }
+
+  function setHudText(text){
+    hudText.textContent = text;
+  }
+
+  function updateHud(){
+    if(!currentLevel){
+      setHudText('Alege un nivel 🎯');
+      return;
     }
 
-    function catchItem(el, x, y){
-      if (!active) return;
+    const lvl = currentLevel;
+    if(lvl.mode === 'sequence'){
+      const next = lvl.targets[seqIndex] || '—';
+      setHudText(`${lvl.icon} ${lvl.title} • Următorul: ${next} • ${seqIndex}/${lvl.targets.length}`);
+    } else {
+      const done = collectedSet.size;
+      setHudText(`${lvl.icon} ${lvl.title} • ${done}/${lvl.targets.length}`);
+    }
+  }
 
-      // stop animation to avoid "jump" when we change transform
-      el.style.animation = 'none';
+  function startLevel(levelId){
+    const lvl = LEVELS.find(l => l.id === levelId);
+    if(!lvl) return;
+    if(!isUnlocked(levelId)) return;
 
-      if (el.classList.contains('letter')) {
-        const ch = el.dataset.letter;
-        if (!found[ch]) {
-          found[ch] = true;
-          updateHud();
-          glowPulse();
-          burstConfetti();
+    // increment tries
+    state.progress.levels[levelId].tries = (state.progress.levels[levelId].tries || 0) + 1;
+    state.progress.levels[levelId].lastPlayed = nowISO();
+    saveState();
+
+    currentLevel = lvl;
+    collectedSet = new Set();
+    seqIndex = 0;
+
+    cleanupField();
+    openMap(false);
+    openTrophies(false);
+    endModal.classList.add('hidden');
+
+    active = true;
+    startTime = Date.now();
+    updateHud();
+
+    if (spawnTimer) clearInterval(spawnTimer);
+    spawnTimer = setInterval(spawnItem, SPAWN_MS);
+  }
+
+  function endLevel(completed){
+    active = false;
+    if (spawnTimer) clearInterval(spawnTimer);
+    cleanupField();
+
+    if(!currentLevel) return;
+
+    const elapsed = Math.max(1, Math.round((Date.now() - startTime) / 1000));
+    const prog = state.progress.levels[currentLevel.id];
+
+    prog.lastTime = elapsed;
+    if(completed){
+      prog.completed = true;
+      prog.bestTime = prog.bestTime ? Math.min(prog.bestTime, elapsed) : elapsed;
+    }
+    saveState();
+
+    // show end modal (only if completed)
+    if(completed){
+      glowPulse();
+      confettiBurst();
+      confettiParty(1600);
+      beep(880, 70);
+
+      endTitle.textContent = `BRAVO! ${currentLevel.medal}`;
+      endMsg.textContent = `Ai câștigat medalia la ${currentLevel.icon} ${currentLevel.title}!`;
+      const best = prog.bestTime ? prog.bestTime + 's' : '—';
+      endStats.textContent = `Timp: ${elapsed}s • Best: ${best} • Încercări: ${prog.tries || 0}`;
+
+      // next button enable/disable
+      const idx = LEVELS.findIndex(l => l.id === currentLevel.id);
+      const hasNext = idx < LEVELS.length - 1;
+      btnNext.disabled = !hasNext;
+      btnNext.style.opacity = hasNext ? '1' : '.55';
+
+      endModal.classList.remove('hidden');
+    } else {
+      // fallback
+      renderMap();
+    }
+  }
+
+  function completeIfReady(){
+    if(!currentLevel) return;
+    if(currentLevel.mode === 'sequence'){
+      if(seqIndex >= currentLevel.targets.length) endLevel(true);
+    } else {
+      if(collectedSet.size >= currentLevel.targets.length) endLevel(true);
+    }
+  }
+
+  function randomFallDuration(isTarget){
+    // targets slightly slower (easier)
+    const min = isTarget ? FALL_MIN : (FALL_MIN - 0.2);
+    const max = isTarget ? FALL_MAX : (FALL_MAX - 0.1);
+    return (Math.random() * (max - min) + min).toFixed(2);
+  }
+
+  function spawnItem(){
+    if(!active || !currentLevel) return;
+    if (game.querySelectorAll('.item').length >= MAX_ONSCREEN) return;
+
+    const lvl = currentLevel;
+
+    // decide type
+    const r = Math.random();
+    let kind = 'fun'; // fun / bad / target
+    if (r < lvl.spawn.target) kind = 'target';
+    else if (r < lvl.spawn.target + lvl.spawn.bad) kind = 'bad';
+    else kind = 'fun';
+
+    // build element
+    const wrap = document.createElement('div');
+    wrap.className = 'item';
+
+    // choose payload
+    let payload = null;
+    let isTarget = (kind === 'target');
+
+    if(kind === 'bad'){
+      payload = BAD_EMOJIS[Math.floor(Math.random() * BAD_EMOJIS.length)];
+      const el = document.createElement('div');
+      el.className = 'emoji';
+      el.textContent = payload;
+      wrap.dataset.kind = 'bad';
+      wrap.appendChild(el);
+    } else if(kind === 'fun'){
+      payload = FUN_EMOJIS[Math.floor(Math.random() * FUN_EMOJIS.length)];
+      const el = document.createElement('div');
+      el.className = 'emoji';
+      el.textContent = payload;
+      wrap.dataset.kind = 'fun';
+      wrap.appendChild(el);
+    } else {
+      // target
+      // for sequence mode: prefer the "next" target to spawn a bit more
+      if(lvl.mode === 'sequence'){
+        const next = lvl.targets[seqIndex] || lvl.targets[lvl.targets.length - 1];
+        const roll = Math.random();
+        payload = roll < 0.72 ? next : lvl.targets[Math.floor(Math.random() * lvl.targets.length)];
+      } else {
+        // prefer missing ones
+        const missing = lvl.targets.filter(t => !collectedSet.has(t));
+        payload = (missing.length && Math.random() < 0.75)
+          ? missing[Math.floor(Math.random() * missing.length)]
+          : lvl.targets[Math.floor(Math.random() * lvl.targets.length)];
+      }
+
+      wrap.dataset.kind = 'target';
+      wrap.dataset.val = payload;
+
+      const rendered = lvl.targetRenderer(payload, lvl);
+      wrap.appendChild(rendered);
+    }
+
+    // position
+    const leftPct = Math.random() * 78 + 11; // 11..89
+    wrap.style.left = leftPct + '%';
+
+    // duration
+    const dur = randomFallDuration(isTarget);
+    wrap.style.animationDuration = dur + 's';
+
+    wrap.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const x = e.clientX;
+      const y = e.clientY;
+      catchItem(wrap, x, y);
+    });
+
+    game.appendChild(wrap);
+
+    setTimeout(() => {
+      if (wrap.parentNode) wrap.remove();
+    }, Number(dur) * 1000);
+  }
+
+  function catchItem(wrap, x, y){
+    if(!active || !currentLevel) return;
+
+    // stop animation to avoid jump
+    wrap.style.animation = 'none';
+
+    const kind = wrap.dataset.kind;
+    if(kind === 'bad'){
+      beep(220, 90);
+      showFloating(x, y, "Ups! ☔", 'var(--bad)');
+      if (navigator.vibrate) navigator.vibrate(120);
+    } else if(kind === 'fun'){
+      beep(720, 55);
+      const msg = PRAISE[Math.floor(Math.random() * PRAISE.length)];
+      showFloating(x, y, msg, '#0b1220');
+    } else {
+      // target
+      const val = wrap.dataset.val;
+      const lvl = currentLevel;
+
+      if(lvl.mode === 'sequence'){
+        const next = lvl.targets[seqIndex];
+        if(val === next){
+          seqIndex++;
+          glowPulse(); confettiBurst();
           beep(880, 70);
-          showFloating(x, y, `+ ${ch} ✅`, 'var(--good)');
+          showFloating(x, y, `Corect! ✅`, 'var(--good)');
+          updateHud();
+          completeIfReady();
+        } else {
+          // gentle feedback (no hard penalty)
+          beep(420, 70);
+          showFloating(x, y, `Nu încă 😄`, 'rgba(17,24,39,.75)');
+        }
+      } else {
+        if(!collectedSet.has(val)){
+          collectedSet.add(val);
+          glowPulse(); confettiBurst();
+          beep(880, 70);
+
+          // label friendly for colors/shapes/animals
+          let nice = val;
+          if(lvl.labels && lvl.labels[val]) nice = lvl.labels[val];
+          showFloating(x, y, `+ ${nice} ✅`, 'var(--good)');
+
+          updateHud();
+          completeIfReady();
         } else {
           beep(600, 55);
-          showFloating(x, y, "Avem deja 😄", '#0b1220');
+          showFloating(x, y, "Avem deja 😄", 'rgba(17,24,39,.75)');
         }
-      } else if (el.dataset.type === 'bad') {
-        beep(220, 90);
-        showFloating(x, y, "Ups! ☔", 'var(--bad)');
-      } else {
-        beep(720, 50);
-        const msg = praise[Math.floor(Math.random()*praise.length)];
-        showFloating(x, y, msg, '#0b1220');
       }
 
-      el.style.transition = 'transform 120ms ease, opacity 120ms ease';
-      el.style.transform = 'scale(1.35)';
-      el.style.opacity = '0';
-      setTimeout(()=> { if (el.parentNode) el.remove(); }, 130);
-
-      if (allFound()) endGame();
+      if (navigator.vibrate) navigator.vibrate([60, 30, 60]);
     }
 
-    function startGame(){
-      resetState();
-      active = true;
-      startTime = Date.now();
-      startModal.classList.add('hidden');
-      endModal.classList.add('hidden');
+    // pop away
+    wrap.style.transition = 'transform 120ms ease, opacity 120ms ease';
+    wrap.style.transform = 'scale(1.35)';
+    wrap.style.opacity = '0';
+    setTimeout(() => { if(wrap.parentNode) wrap.remove(); }, 130);
+  }
 
+  // Pause on tab hidden (battery + no surprise)
+  document.addEventListener('visibilitychange', () => {
+    if (!active) return;
+    if (document.hidden) {
       if (spawnTimer) clearInterval(spawnTimer);
-      spawnTimer = setInterval(spawn, SPAWN_MS);
-    }
-
-    function endGame(){
-      active = false;
+    } else {
       if (spawnTimer) clearInterval(spawnTimer);
-      game.querySelectorAll('.item').forEach(el => el.remove());
-
-      const sec = Math.max(1, Math.round((Date.now() - startTime) / 1000));
-      timeStat.textContent = `Timp: ${sec} secunde ⏱️`;
-
-      // celebratory confetti (simple + bounded)
-      const t0 = Date.now();
-      const interval = setInterval(() => {
-        confetti({ particleCount: 45, spread: 90, startVelocity: 28, origin: { x: Math.random(), y: Math.random()*0.4 + 0.2 } });
-        if (Date.now() - t0 > 1800) clearInterval(interval);
-      }, 220);
-
-      setTimeout(()=> endModal.classList.remove('hidden'), 250);
+      spawnTimer = setInterval(spawnItem, SPAWN_MS);
     }
+  });
 
-    // pause when tab is hidden (saves battery + avoids surprise spawn)
-    document.addEventListener('visibilitychange', () => {
-      if (!active) return;
-      if (document.hidden) {
-        if (spawnTimer) clearInterval(spawnTimer);
-      } else {
-        if (spawnTimer) clearInterval(spawnTimer);
-        spawnTimer = setInterval(spawn, SPAWN_MS);
-      }
-    });
+  // ======= Buttons / Navigation =======
+  function syncSoundButton(){
+    btnSound.textContent = soundOn ? '🔊 ON' : '🔊 OFF';
+  }
 
-    btnStart.addEventListener('click', () => startGame());
-    btnAgain.addEventListener('click', () => startGame());
-    btnClose.addEventListener('click', () => endModal.classList.add('hidden'));
+  btnSound.addEventListener('click', () => {
+    soundOn = !soundOn;
+    state.settings.soundOn = soundOn;
+    syncSoundButton();
+    if (soundOn) ensureAudio(); // must be on user gesture
+    saveState();
+  });
 
-    btnSound.addEventListener('click', () => {
-      soundOn = !soundOn;
-      btnSound.textContent = soundOn ? '🔊 Sunet: ON' : '🔊 Sunet: OFF';
-      // create audio context on user gesture
-      if (soundOn) ensureAudio();
-    });
-  </script>
+  btnHome.addEventListener('click', () => {
+    // stop gameplay and go to map
+    active = false;
+    if (spawnTimer) clearInterval(spawnTimer);
+    cleanupField();
+    currentLevel = null;
+    updateHud();
+    renderMap();
+  });
+
+  btnTrophies.addEventListener('click', () => openTrophies(true));
+
+  btnCloseMap.addEventListener('click', () => openMap(false));
+
+  btnReset.addEventListener('click', () => {
+    if(confirm('Sigur resetezi tot progresul și trofeele?')) resetProgress();
+  });
+  btnReset2.addEventListener('click', () => {
+    if(confirm('Sigur resetezi tot progresul și trofeele?')) {
+      resetProgress();
+      openTrophies(true);
+    }
+  });
+
+  btnCloseTrophies.addEventListener('click', () => openTrophies(false));
+  btnCloseTrophies2.addEventListener('click', () => openTrophies(false));
+
+  btnExportHint.addEventListener('click', () => {
+    alert('Trofeele sunt în LocalStorage.\nCheie: ' + STORAGE_KEY + '\nPoți exporta din DevTools → Application/Storage.');
+  });
+
+  btnBackToMap.addEventListener('click', () => {
+    endModal.classList.add('hidden');
+    currentLevel = null;
+    renderMap();
+  });
+
+  btnReplay.addEventListener('click', () => {
+    endModal.classList.add('hidden');
+    if(currentLevel) startLevel(currentLevel.id);
+  });
+
+  btnNext.addEventListener('click', () => {
+    if(!currentLevel) return;
+    const idx = LEVELS.findIndex(l => l.id === currentLevel.id);
+    const next = LEVELS[idx + 1];
+    endModal.classList.add('hidden');
+    if(next) startLevel(next.id);
+  });
+
+  // ======= Init =======
+  function init(){
+    soundOn = !!state.settings.soundOn;
+    syncSoundButton();
+    renderMap();
+    renderTrophies();
+  }
+
+  init();
+})();
+</script>
+
 </body>
 </html>
