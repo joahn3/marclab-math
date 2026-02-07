@@ -3,10 +3,10 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
-    "lint:html": "htmlhint -c .htmlhintrc \"index.html\" \"plusminus/index.html\"",
-    "lint:css": "stylelint --config .stylelintrc.json --custom-syntax postcss-html \"index.html\" \"plusminus/index.html\"",
+    "lint:html": "htmlhint -c .htmlhintrc \"index.html\" \"PlusMinus/index.html\"",
+    "lint:css": "stylelint --config .stylelintrc.json --custom-syntax postcss-html \"index.html\" \"PlusMinus/index.html\"",
     "check:js": "node tools/check-inline-js.mjs",
-    "lint:js": "eslint -c .eslintrc.cjs \"index.html\" \"plusminus/index.html\"",
+    "lint:js": "eslint -c .eslintrc.cjs \"index.html\" \"PlusMinus/index.html\"",
     "lint": "npm run lint:html && npm run lint:css && npm run check:js && npm run lint:js",
     "test:smoke": "node tools/smoke.mjs"
   },
