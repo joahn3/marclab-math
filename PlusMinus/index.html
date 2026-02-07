@@ -1,0 +1,799 @@
+<!doctype html>
+<html lang="ro">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Marc • Matematică (1–10)</title>
+  <style>
+    :root{
+      --bg:#0b1220;
+      --card:#121b2f;
+      --muted:#94a3b8;
+      --text:#e5e7eb;
+      --accent:#60a5fa;
+      --good:#34d399;
+      --bad:#fb7185;
+      --warn:#fbbf24;
+      --line:rgba(255,255,255,.08);
+      --shadow: 0 12px 30px rgba(0,0,0,.35);
+      --radius:22px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(1200px 700px at 30% 0%, rgba(96,165,250,.18), transparent),
+                  radial-gradient(900px 600px at 80% 20%, rgba(52,211,153,.12), transparent),
+                  var(--bg);
+      color:var(--text);
+      min-height:100vh;
+      display:flex;
+      align-items:stretch;
+      justify-content:center;
+      padding:18px;
+    }
+    .app{width:min(980px, 100%); display:flex; flex-direction:column; gap:14px;}
+    .top{
+      display:flex; gap:12px; flex-wrap:wrap;
+      align-items:center; justify-content:space-between;
+    }
+    .brand{
+      display:flex; flex-direction:column; gap:2px;
+      padding:12px 14px; background:rgba(255,255,255,.04);
+      border:1px solid var(--line); border-radius:var(--radius);
+    }
+    .brand b{font-size:16px}
+    .brand span{font-size:12px; color:var(--muted)}
+    .stats{
+      display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;
+    }
+    .pill{
+      padding:10px 12px; background:rgba(255,255,255,.04);
+      border:1px solid var(--line); border-radius:999px;
+      display:flex; gap:8px; align-items:center;
+      font-weight:600; font-size:13px;
+    }
+    .pill small{color:var(--muted); font-weight:700; letter-spacing:.02em}
+    .main{
+      display:grid; grid-template-columns: 1.2fr .8fr;
+      gap:14px;
+    }
+    @media (max-width: 880px){
+      .main{grid-template-columns: 1fr;}
+    }
+    .card{
+      background:rgba(255,255,255,.04);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:16px;
+    }
+    .prompt{
+      display:flex; flex-direction:column; gap:12px;
+      min-height:420px;
+    }
+    .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+    .h{
+      font-size:14px; color:var(--muted); letter-spacing:.02em; font-weight:700;
+      text-transform:uppercase;
+    }
+    .big{
+      font-size:56px; font-weight:900; letter-spacing:.01em;
+      line-height:1.1;
+      display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+      padding:10px 6px;
+    }
+    .eqBox{
+      width:140px; height:86px;
+      border-radius:18px;
+      border:2px solid rgba(255,255,255,.16);
+      background:rgba(255,255,255,.06);
+      display:flex; align-items:center; justify-content:center;
+      font-size:44px; font-weight:900;
+    }
+    .subtext{color:var(--muted); font-size:14px}
+    .dots{
+      display:flex; flex-wrap:wrap; gap:10px;
+      padding:10px 6px;
+    }
+    .dot{
+      width:28px; height:28px; border-radius:999px;
+      border:2px solid rgba(255,255,255,.5);
+      background:rgba(255,255,255,.06);
+    }
+    .kbd{
+      display:grid; grid-template-columns: repeat(3, 1fr); gap:10px;
+      margin-top:auto;
+    }
+    .btn{
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.06);
+      color:var(--text);
+      padding:16px 14px;
+      border-radius:18px;
+      font-size:24px;
+      font-weight:900;
+      box-shadow: 0 10px 18px rgba(0,0,0,.25);
+      cursor:pointer;
+      user-select:none;
+      touch-action: manipulation;
+    }
+    .btn:active{transform: translateY(1px)}
+    .btn.good{border-color: rgba(52,211,153,.35)}
+    .btn.bad{border-color: rgba(251,113,133,.35)}
+    .btn.small{font-size:16px; font-weight:800; padding:12px 12px; border-radius:14px;}
+    .btn.primary{background: rgba(96,165,250,.18); border-color: rgba(96,165,250,.35)}
+    .btn.warn{background: rgba(251,191,36,.14); border-color: rgba(251,191,36,.35)}
+    .btn.ghost{background: transparent}
+    .feedback{
+      padding:12px 14px; border-radius:18px; border:1px solid var(--line);
+      display:flex; justify-content:space-between; gap:12px; align-items:center;
+      background:rgba(0,0,0,.15);
+    }
+    .ok{color:var(--good); font-weight:900}
+    .no{color:var(--bad); font-weight:900}
+    .meter{
+      height:10px; width:100%;
+      background:rgba(255,255,255,.08);
+      border-radius:999px; overflow:hidden;
+      border:1px solid rgba(255,255,255,.06);
+    }
+    .meter > i{display:block; height:100%; width:40%; background:rgba(96,165,250,.65)}
+    .side{
+      display:flex; flex-direction:column; gap:14px;
+    }
+    .grid2{display:grid; grid-template-columns: 1fr 1fr; gap:10px}
+    .skill{
+      padding:12px; border-radius:18px; border:1px solid var(--line);
+      background:rgba(255,255,255,.03);
+      display:flex; flex-direction:column; gap:8px;
+      min-height:110px;
+    }
+    .skill b{font-size:14px}
+    .skill small{color:var(--muted); font-weight:700}
+    .footerBtns{display:flex; gap:10px; flex-wrap:wrap}
+    dialog{
+      border:none; border-radius:18px; padding:0;
+      width:min(680px, 92vw);
+      background:rgba(18,27,47,.98);
+      color:var(--text);
+      box-shadow: var(--shadow);
+      border:1px solid rgba(255,255,255,.12);
+    }
+    dialog::backdrop{background:rgba(0,0,0,.55)}
+    .modal{padding:16px}
+    .modal h3{margin:0 0 8px}
+    .modal p{margin:0 0 12px; color:var(--muted)}
+    .modal textarea{
+      width:100%; min-height:120px;
+      background:rgba(255,255,255,.06);
+      color:var(--text);
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:14px;
+      padding:10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size:12px;
+    }
+    .toast{
+      position:fixed; left:50%; bottom:18px; transform:translateX(-50%);
+      background:rgba(0,0,0,.65);
+      border:1px solid rgba(255,255,255,.14);
+      padding:10px 14px; border-radius:999px;
+      color:var(--text);
+      font-weight:800; font-size:13px;
+      display:none;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="top">
+      <div class="brand">
+        <b>Marc • Matematică (1–10)</b>
+        <span>offline • memorie locală • progres adaptiv • sticker vibes ⭐</span>
+      </div>
+      <div class="stats">
+        <div class="pill"><small>LEVEL</small> <span id="uiLevel">1</span></div>
+        <div class="pill"><small>XP</small> <span id="uiXp">0</span></div>
+        <div class="pill"><small>STREAK</small> <span id="uiStreak">0</span></div>
+        <div class="pill"><small>COINS</small> <span id="uiCoins">0</span></div>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="card prompt">
+        <div class="row" style="justify-content:space-between">
+          <div>
+            <div class="h">Exercițiu</div>
+            <div class="subtext" id="uiMode">—</div>
+          </div>
+          <div class="row">
+            <button class="btn small ghost" id="btnEasy">Mai ușor</button>
+            <button class="btn small warn" id="btnResetRound">Schimbă</button>
+          </div>
+        </div>
+
+        <div id="uiProblemArea">
+          <!-- problem renders here -->
+        </div>
+
+        <div class="feedback" id="uiFeedback" style="display:none">
+          <div id="uiFeedbackText">—</div>
+          <div class="row">
+            <button class="btn small primary" id="btnNext">Următorul</button>
+          </div>
+        </div>
+
+        <div class="kbd" id="kbd">
+          <!-- numeric keypad -->
+        </div>
+      </div>
+
+      <div class="side">
+        <div class="card">
+          <div class="row" style="justify-content:space-between">
+            <div>
+              <div class="h">Progres pe abilități</div>
+              <div class="subtext">Aplicația alege mai des ce e “mai greu” pentru Marc.</div>
+            </div>
+          </div>
+          <div class="grid2" id="skillsGrid"></div>
+        </div>
+
+        <div class="card">
+          <div class="h">Control părinte</div>
+          <div class="subtext">Export / import progres (backup), reset, și o mică privire în date.</div>
+          <div class="footerBtns" style="margin-top:12px">
+            <button class="btn small primary" id="btnParent">Dashboard</button>
+            <button class="btn small" id="btnExport">Export</button>
+            <label class="btn small" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer">
+              Import
+              <input type="file" id="importFile" accept="application/json" style="display:none" />
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <dialog id="parentDlg">
+    <div class="modal">
+      <div class="row" style="justify-content:space-between;align-items:flex-start">
+        <div>
+          <h3>Dashboard părinte</h3>
+          <p>Totul rămâne local. Poți reseta progresul sau doar anumite abilități.</p>
+        </div>
+        <button class="btn small" id="btnCloseDlg">Închide</button>
+      </div>
+
+      <div class="row" style="gap:10px;flex-wrap:wrap;margin:10px 0 12px">
+        <button class="btn small warn" id="btnResetAll">Reset TOTAL</button>
+        <button class="btn small" id="btnResetSkills">Reset doar abilități</button>
+        <button class="btn small" id="btnGiveCoins">+50 coins</button>
+      </div>
+
+      <div class="h">Date (JSON)</div>
+      <textarea id="stateDump" readonly></textarea>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast">—</div>
+
+<script>
+(() => {
+  const STORAGE_KEY = "marc-math-v1";
+
+  const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
+  const now = ()=>performance.now();
+
+  function toast(msg){
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.style.display = "block";
+    clearTimeout(toast._tm);
+    toast._tm = setTimeout(()=>t.style.display="none", 1400);
+  }
+
+  function defaultState(){
+    return {
+      meta: { version: 1, createdAt: Date.now() },
+      player: { name: "Marc" },
+      economy: { xp: 0, level: 1, coins: 0, streak: 0, bestStreak: 0 },
+      // mastery: 0..1 (mai mare = mai bun)
+      skills: {
+        add:      { name:"Adunări", level:1, mastery:.45, attempts:0, correct:0, emaTime: 0, last: null },
+        sub:      { name:"Scăderi", level:1, mastery:.35, attempts:0, correct:0, emaTime: 0, last: null },
+        make10:   { name:"Până la 10", level:1, mastery:.30, attempts:0, correct:0, emaTime: 0, last: null },
+        compare:  { name:"Compară", level:1, mastery:.30, attempts:0, correct:0, emaTime: 0, last: null },
+        count:    { name:"Numără", level:1, mastery:.40, attempts:0, correct:0, emaTime: 0, last: null },
+      },
+      history: [] // ultimele N răspunsuri (mini)
+    };
+  }
+
+  function loadState(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return defaultState();
+      const s = JSON.parse(raw);
+      // soft-migrate
+      if(!s.skills) return defaultState();
+      return s;
+    }catch(e){
+      return defaultState();
+    }
+  }
+
+  function saveState(){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  function xpToLevel(xp){
+    // level 1..∞, 100 xp per level (simplu pt copii)
+    return Math.floor(xp / 100) + 1;
+  }
+
+  function award(correct, timeMs){
+    const eco = state.economy;
+
+    // XP: corect = 10 + bonus mic, greșit = 2
+    let gained = correct ? 10 : 2;
+
+    // bonus pt răspuns rapid (dar nu stresăm copilul)
+    if(correct && timeMs > 0 && timeMs < 6000) gained += 2;
+
+    eco.xp += gained;
+    const newLevel = xpToLevel(eco.xp);
+    if(newLevel > eco.level){
+      eco.level = newLevel;
+      eco.coins += 10;
+      toast("LEVEL UP! ⭐ +10 coins");
+    }
+
+    if(correct){
+      eco.streak += 1;
+      eco.bestStreak = Math.max(eco.bestStreak, eco.streak);
+      // coin pentru streak din 3 în 3
+      if(eco.streak % 3 === 0){
+        eco.coins += 1;
+        toast("+1 coin 🪙");
+      }
+    } else {
+      eco.streak = 0;
+    }
+  }
+
+  function updateSkill(skillKey, correct, timeMs){
+    const sk = state.skills[skillKey];
+    sk.attempts += 1;
+    if(correct) sk.correct += 1;
+    sk.last = { correct, timeMs, at: Date.now() };
+
+    // EMA time (exponential moving average)
+    if(timeMs && timeMs > 0){
+      sk.emaTime = sk.emaTime ? (0.8*sk.emaTime + 0.2*timeMs) : timeMs;
+    }
+
+    // mastery update (simplu + stabil):
+    // + corect -> urcă; greșit -> scade; timp mare -> ușor penalizat
+    const timePenalty = (timeMs && timeMs > 0) ? clamp((timeMs - 9000) / 25000, 0, 0.10) : 0; // după 9s, mică penalizare
+    const delta = correct ? 0.07 : -0.08;
+    sk.mastery = clamp(sk.mastery + delta - timePenalty, 0.05, 0.98);
+
+    // “level” pe skill (nu același cu level global)
+    // crește când mastery trece praguri și are suficiente încercări
+    const m = sk.mastery;
+    const a = sk.attempts;
+    let target = 1;
+    if(m > .55 && a >= 8) target = 2;
+    if(m > .70 && a >= 16) target = 3;
+    if(m > .82 && a >= 26) target = 4;
+    sk.level = Math.max(sk.level, target);
+  }
+
+  function pickSkill(){
+    // choose weakest mastery, but keep variety
+    const keys = Object.keys(state.skills);
+    const weights = keys.map(k => {
+      const sk = state.skills[k];
+      const need = (1 - sk.mastery);
+      const variety = 0.15; // ca să nu repete la infinit aceeași abilitate
+      const w = need + variety;
+      return { k, w };
+    });
+
+    // bias: dacă tocmai a greșit ceva, revine mai des la acel skill
+    const last = state.history[state.history.length - 1];
+    if(last && last.correct === false){
+      const item = weights.find(x => x.k === last.skill);
+      if(item) item.w += 0.35;
+    }
+
+    const sum = weights.reduce((s,x)=>s+x.w,0);
+    let r = Math.random() * sum;
+    for(const it of weights){
+      r -= it.w;
+      if(r <= 0) return it.k;
+    }
+    return weights[0].k;
+  }
+
+  function genProblem(skillKey){
+    const sk = state.skills[skillKey];
+    const lvl = sk.level;
+
+    // difficulty constraints by skill-level (child friendly)
+    if(skillKey === "count"){
+      const n = randomInt(1, 10);
+      return { skill: skillKey, type:"dots", text:`Numără punctele`, a:n, b:null, op:null, answer:n };
+    }
+
+    if(skillKey === "compare"){
+      const max = lvl >= 3 ? 10 : 8;
+      const a = randomInt(1, max);
+      const b = randomInt(1, max);
+      const answer = a === b ? "=" : (a > b ? ">" : "<");
+      return { skill: skillKey, type:"compare", text:`Compară numerele`, a, b, op:"?", answer };
+    }
+
+    if(skillKey === "make10"){
+      const a = randomInt(1, 9);
+      const answer = 10 - a;
+      return { skill: skillKey, type:"make10", text:`Cât lipsește până la 10?`, a, b:null, op:"+", answer };
+    }
+
+    if(skillKey === "add"){
+      // lvl: 1 sum<=5, 2 sum<=10 with small addends, 3 includes 0, 4 any within 10
+      let maxSum = (lvl===1) ? 5 : 10;
+      let a = (lvl>=3) ? randomInt(0, 10) : randomInt(1, 9);
+      let b = randomInt(0, maxSum - a);
+      // keep b small early
+      if(lvl<=2) b = randomInt(0, Math.min(5, maxSum - a));
+      const answer = a + b;
+      return { skill: skillKey, type:"eq", text:`Adună`, a, b, op:"+", answer };
+    }
+
+    if(skillKey === "sub"){
+      // lvl: 1 a<=8, b small; 2 a<=10, b<=5; 3 includes b any; 4 includes 0 results a-b
+      const aMax = (lvl===1) ? 8 : 10;
+      let a = randomInt(1, aMax);
+      let b = (lvl<=2) ? randomInt(0, Math.min(5, a)) : randomInt(0, a);
+      const answer = a - b;
+      return { skill: skillKey, type:"eq", text:`Scade`, a, b, op:"−", answer };
+    }
+
+    // fallback
+    return { skill: "add", type:"eq", text:"Adună", a:1, b:1, op:"+", answer:2 };
+  }
+
+  function randomInt(min, max){
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  // UI
+  const ui = {
+    level: document.getElementById("uiLevel"),
+    xp: document.getElementById("uiXp"),
+    streak: document.getElementById("uiStreak"),
+    coins: document.getElementById("uiCoins"),
+    mode: document.getElementById("uiMode"),
+    problemArea: document.getElementById("uiProblemArea"),
+    feedback: document.getElementById("uiFeedback"),
+    feedbackText: document.getElementById("uiFeedbackText"),
+    btnNext: document.getElementById("btnNext"),
+    kbd: document.getElementById("kbd"),
+    skillsGrid: document.getElementById("skillsGrid"),
+    btnResetRound: document.getElementById("btnResetRound"),
+    btnEasy: document.getElementById("btnEasy"),
+    parentDlg: document.getElementById("parentDlg"),
+    btnParent: document.getElementById("btnParent"),
+    btnCloseDlg: document.getElementById("btnCloseDlg"),
+    stateDump: document.getElementById("stateDump"),
+    btnResetAll: document.getElementById("btnResetAll"),
+    btnResetSkills: document.getElementById("btnResetSkills"),
+    btnGiveCoins: document.getElementById("btnGiveCoins"),
+    btnExport: document.getElementById("btnExport"),
+    importFile: document.getElementById("importFile"),
+  };
+
+  let state = loadState();
+  let current = null;
+  let tStart = 0;
+  let locked = false;
+
+  function renderStats(){
+    ui.level.textContent = state.economy.level;
+    ui.xp.textContent = state.economy.xp;
+    ui.streak.textContent = state.economy.streak;
+    ui.coins.textContent = state.economy.coins;
+  }
+
+  function renderSkills(){
+    ui.skillsGrid.innerHTML = "";
+    for(const [k, sk] of Object.entries(state.skills)){
+      const div = document.createElement("div");
+      div.className = "skill";
+      const pct = Math.round(sk.mastery*100);
+      div.innerHTML = `
+        <b>${sk.name}</b>
+        <small>Nivel skill: ${sk.level} • Mastery: ${pct}%</small>
+        <div class="meter"><i style="width:${pct}%"></i></div>
+        <small>Corecte: ${sk.correct}/${sk.attempts || 0}</small>
+      `;
+      ui.skillsGrid.appendChild(div);
+    }
+  }
+
+  function renderProblem(){
+    locked = false;
+    ui.feedback.style.display = "none";
+
+    const sk = state.skills[current.skill];
+    ui.mode.textContent = `${sk.name} • nivel skill ${sk.level}`;
+
+    ui.problemArea.innerHTML = "";
+
+    if(current.type === "dots"){
+      const h = document.createElement("div");
+      h.className = "h";
+      h.textContent = current.text;
+      ui.problemArea.appendChild(h);
+
+      const dots = document.createElement("div");
+      dots.className = "dots";
+      for(let i=0;i<current.answer;i++){
+        const d = document.createElement("div");
+        d.className = "dot";
+        dots.appendChild(d);
+      }
+      ui.problemArea.appendChild(dots);
+
+      const big = document.createElement("div");
+      big.className = "big";
+      big.innerHTML = `Câte sunt? <span class="eqBox" id="answerBox">?</span>`;
+      ui.problemArea.appendChild(big);
+    }
+
+    if(current.type === "eq"){
+      const big = document.createElement("div");
+      big.className = "big";
+      big.innerHTML = `
+        <span>${current.a}</span>
+        <span>${current.op}</span>
+        <span>${current.b}</span>
+        <span>=</span>
+        <span class="eqBox" id="answerBox">?</span>
+      `;
+      ui.problemArea.appendChild(big);
+
+      const help = document.createElement("div");
+      help.className = "subtext";
+      help.textContent = "Poți desena puncte pe hârtie dacă vrei 🙂";
+      ui.problemArea.appendChild(help);
+    }
+
+    if(current.type === "make10"){
+      const big = document.createElement("div");
+      big.className = "big";
+      big.innerHTML = `
+        <span>${current.a}</span>
+        <span>+</span>
+        <span>___</span>
+        <span>=</span>
+        <span>10</span>
+        <span style="margin-left:10px" class="eqBox" id="answerBox">?</span>
+      `;
+      ui.problemArea.appendChild(big);
+
+      const help = document.createElement("div");
+      help.className = "subtext";
+      help.textContent = "Gândește: 10 − numărul de pe foaie.";
+      ui.problemArea.appendChild(help);
+    }
+
+    if(current.type === "compare"){
+      const big = document.createElement("div");
+      big.className = "big";
+      big.innerHTML = `
+        <span>${current.a}</span>
+        <span style="opacity:.8">__</span>
+        <span>${current.b}</span>
+        <span style="margin-left:10px" class="eqBox" id="answerBox">?</span>
+      `;
+      ui.problemArea.appendChild(big);
+
+      const help = document.createElement("div");
+      help.className = "subtext";
+      help.textContent = "Alege: < , > sau =";
+      ui.problemArea.appendChild(help);
+    }
+
+    renderKeypad();
+    tStart = now();
+  }
+
+  function renderKeypad(){
+    ui.kbd.innerHTML = "";
+
+    if(current.type === "compare"){
+      const keys = ["<", "=", ">"];
+      for(const k of keys){
+        const b = document.createElement("button");
+        b.className = "btn";
+        b.textContent = k;
+        b.onclick = ()=>submitAnswer(k);
+        ui.kbd.appendChild(b);
+      }
+      // filler row
+      ["Schimbă", "—", "—"].forEach((t, idx)=>{
+        const b = document.createElement("button");
+        b.className = "btn small " + (idx===0 ? "warn": "ghost");
+        b.textContent = t;
+        b.disabled = idx!==0;
+        if(idx===0) b.onclick = ()=>newRound();
+        ui.kbd.appendChild(b);
+      });
+      return;
+    }
+
+    // numeric keypad (0-10)
+    const nums = [1,2,3,4,5,6,7,8,9,0,"10"];
+    nums.forEach(n=>{
+      const b = document.createElement("button");
+      b.className = "btn";
+      b.textContent = n;
+      b.onclick = ()=>submitAnswer(String(n));
+      ui.kbd.appendChild(b);
+    });
+
+    // control row
+    const back = document.createElement("button");
+    back.className = "btn small";
+    back.textContent = "Șterge";
+    back.onclick = ()=>setAnswer("?");
+    ui.kbd.appendChild(back);
+
+    const skip = document.createElement("button");
+    skip.className = "btn small warn";
+    skip.textContent = "Schimbă";
+    skip.onclick = ()=>newRound();
+    ui.kbd.appendChild(skip);
+
+    const easy = document.createElement("button");
+    easy.className = "btn small ghost";
+    easy.textContent = "Mai ușor";
+    easy.onclick = ()=>makeEasier();
+    ui.kbd.appendChild(easy);
+  }
+
+  function setAnswer(val){
+    const box = document.getElementById("answerBox");
+    if(box) box.textContent = val;
+  }
+
+  function submitAnswer(val){
+    if(locked) return;
+    locked = true;
+
+    const timeMs = Math.max(0, now() - tStart);
+    setAnswer(val);
+
+    const correct = (String(val) === String(current.answer));
+    const skillKey = current.skill;
+
+    // store history (keep last 60)
+    state.history.push({
+      at: Date.now(),
+      skill: skillKey,
+      correct,
+      timeMs: Math.round(timeMs),
+      q: { type: current.type, a: current.a, b: current.b, op: current.op, answer: current.answer },
+      given: val
+    });
+    if(state.history.length > 60) state.history.shift();
+
+    updateSkill(skillKey, correct, timeMs);
+    award(correct, timeMs);
+
+    saveState();
+    renderStats();
+    renderSkills();
+
+    ui.feedback.style.display = "flex";
+    ui.feedbackText.innerHTML = correct
+      ? `<span class="ok">Corect! ✅</span> + XP`
+      : `<span class="no">Aproape. ❌</span> Răspuns: <b>${current.answer}</b>`;
+
+    ui.btnNext.focus();
+  }
+
+  function newRound(){
+    current = genProblem(pickSkill());
+    renderProblem();
+  }
+
+  function makeEasier(){
+    // reduce skill-level for current skill (but keep minimum 1)
+    const sk = state.skills[current.skill];
+    sk.level = Math.max(1, sk.level - 1);
+    sk.mastery = Math.max(0.05, sk.mastery - 0.03); // small nudge
+    saveState();
+    toast("Mai ușor 🙂");
+    newRound();
+  }
+
+  // Parent dashboard
+  function openParent(){
+    ui.stateDump.value = JSON.stringify(state, null, 2);
+    ui.parentDlg.showModal();
+  }
+
+  ui.btnParent.onclick = openParent;
+  ui.btnCloseDlg.onclick = ()=>ui.parentDlg.close();
+  ui.btnResetAll.onclick = ()=>{
+    if(!confirm("Reset TOTAL? (șterge tot progresul)")) return;
+    state = defaultState();
+    saveState();
+    renderStats(); renderSkills(); newRound();
+    ui.parentDlg.close();
+    toast("Reset total ✅");
+  };
+  ui.btnResetSkills.onclick = ()=>{
+    if(!confirm("Reset doar abilitățile? (XP rămâne)")) return;
+    const keepEco = state.economy;
+    state = defaultState();
+    state.economy = keepEco;
+    saveState();
+    renderStats(); renderSkills(); newRound();
+    ui.parentDlg.close();
+    toast("Reset skills ✅");
+  };
+  ui.btnGiveCoins.onclick = ()=>{
+    state.economy.coins += 50;
+    saveState(); renderStats(); renderSkills();
+    ui.stateDump.value = JSON.stringify(state, null, 2);
+    toast("+50 coins 🪙");
+  };
+
+  // Export / Import
+  ui.btnExport.onclick = ()=>{
+    const blob = new Blob([JSON.stringify(state, null, 2)], {type:"application/json"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `marc-math-progress-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast("Export gata ✅");
+  };
+
+  ui.importFile.addEventListener("change", async (e)=>{
+    const file = e.target.files?.[0];
+    if(!file) return;
+    try{
+      const text = await file.text();
+      const s = JSON.parse(text);
+      if(!s.skills || !s.economy) throw new Error("format invalid");
+      state = s;
+      saveState();
+      renderStats(); renderSkills(); newRound();
+      toast("Import OK ✅");
+    }catch(err){
+      alert("Import eșuat. Fișier invalid.");
+    }finally{
+      ui.importFile.value = "";
+    }
+  });
+
+  // Buttons
+  ui.btnNext.onclick = ()=>newRound();
+  ui.btnResetRound.onclick = ()=>newRound();
+  ui.btnEasy.onclick = ()=>makeEasier();
+
+  // Init
+  renderStats();
+  renderSkills();
+  newRound();
+
+})();
+</script>
+</body>
+</html>
