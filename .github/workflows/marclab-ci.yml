@@ -16,7 +16,7 @@ jobs:
       - name: "Sanity: required entrypoints exist"
         run: |
           test -f index.html
-          test -f plusminus/index.html
+          test -f PlusMinus/index.html
 
       - name: Install deps
         run: npm install
