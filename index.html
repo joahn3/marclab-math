@@ -1,3 +1,480 @@
-<a href="/plusminus/" style="font-size:22px;font-weight:900;">
-  ▶ PlusMinus (Level 1: 1–10)
-</a>
+<!doctype html>
+<html lang="ro">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>MarcLab • Platformă</title>
+  <meta name="description" content="MarcLab – platformă de mini-jocuri educaționale. Progres local, offline, export." />
+  <style>
+    :root{
+      --bg:#0b1220;
+      --card:rgba(255,255,255,.04);
+      --muted:#94a3b8;
+      --text:#e5e7eb;
+      --accent:#60a5fa;
+      --good:#34d399;
+      --bad:#fb7185;
+      --warn:#fbbf24;
+      --line:rgba(255,255,255,.10);
+      --shadow: 0 12px 30px rgba(0,0,0,.35);
+      --radius:22px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(1200px 700px at 30% 0%, rgba(96,165,250,.18), transparent),
+                  radial-gradient(900px 600px at 80% 20%, rgba(52,211,153,.12), transparent),
+                  var(--bg);
+      color:var(--text);
+      min-height:100vh;
+      display:flex;
+      justify-content:center;
+      padding:18px;
+    }
+    .app{width:min(980px, 100%); display:flex; flex-direction:column; gap:14px;}
+    header{
+      display:flex; gap:12px; flex-wrap:wrap;
+      align-items:center; justify-content:space-between;
+    }
+    .brand{
+      padding:12px 14px; border:1px solid var(--line);
+      border-radius:var(--radius); background:var(--card);
+      box-shadow:var(--shadow);
+    }
+    .brand b{display:block; font-size:18px}
+    .brand span{display:block; font-size:12px; color:var(--muted); margin-top:2px}
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap:14px;
+    }
+    @media (max-width: 880px){ .grid{grid-template-columns: 1fr;} }
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:16px;
+      display:flex; flex-direction:column; gap:10px;
+      min-height:220px;
+    }
+    .titleRow{display:flex; justify-content:space-between; gap:10px; align-items:flex-start; flex-wrap:wrap;}
+    .card h2{margin:0; font-size:18px}
+    .tag{
+      padding:6px 10px; border-radius:999px;
+      border:1px solid rgba(96,165,250,.35);
+      background:rgba(96,165,250,.14);
+      font-weight:900; font-size:12px;
+    }
+    .desc{color:var(--muted); font-size:14px; line-height:1.35}
+    .metaRow{display:flex; gap:10px; flex-wrap:wrap; margin-top:4px;}
+    .pill{
+      padding:8px 10px; border-radius:999px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.03);
+      font-weight:900; font-size:12px;
+      display:flex; gap:6px; align-items:center;
+    }
+    .pill small{color:var(--muted); font-weight:900; letter-spacing:.02em}
+    .btnRow{display:flex; gap:10px; flex-wrap:wrap; margin-top:auto;}
+    .btn{
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.06);
+      color:var(--text);
+      padding:12px 12px;
+      border-radius:16px;
+      font-size:14px;
+      font-weight:900;
+      cursor:pointer;
+      user-select:none;
+      touch-action: manipulation;
+    }
+    .btn.primary{background: rgba(96,165,250,.18); border-color: rgba(96,165,250,.35)}
+    .btn.warn{background: rgba(251,191,36,.14); border-color: rgba(251,191,36,.35)}
+    .btn.ghost{background: transparent}
+    .btn:active{transform: translateY(1px)}
+    .meter{
+      height:10px; width:100%;
+      background:rgba(255,255,255,.08);
+      border-radius:999px; overflow:hidden;
+      border:1px solid rgba(255,255,255,.06);
+    }
+    .meter > i{display:block; height:100%; width:0%; background:rgba(96,165,250,.65)}
+    .skills{
+      display:grid; grid-template-columns: 1fr 1fr; gap:10px;
+    }
+    @media (max-width: 560px){ .skills{grid-template-columns:1fr;} }
+    .skill{
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.03);
+      border-radius:16px;
+      padding:10px;
+      display:flex; flex-direction:column; gap:6px;
+    }
+    .skill b{font-size:13px}
+    .skill small{color:var(--muted); font-weight:900}
+    dialog{
+      border:none; border-radius:18px; padding:0;
+      width:min(720px, 92vw);
+      background:rgba(18,27,47,.98);
+      color:var(--text);
+      box-shadow: var(--shadow);
+      border:1px solid rgba(255,255,255,.12);
+    }
+    dialog::backdrop{background:rgba(0,0,0,.55)}
+    .modal{padding:16px}
+    .modal h3{margin:0 0 8px}
+    .modal p{margin:0 0 12px; color:var(--muted)}
+    .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between}
+    .pinInput{
+      width:100%;
+      background:rgba(255,255,255,.06);
+      color:var(--text);
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:14px;
+      padding:14px 12px;
+      font-size:22px;
+      font-weight:900;
+      letter-spacing:.12em;
+      text-align:center;
+      outline:none;
+    }
+    .toast{
+      position:fixed; left:50%; bottom:18px; transform:translateX(-50%);
+      background:rgba(0,0,0,.65);
+      border:1px solid rgba(255,255,255,.14);
+      padding:10px 14px; border-radius:999px;
+      color:var(--text);
+      font-weight:900; font-size:13px;
+      display:none;
+    }
+    .hint{color:var(--muted); font-size:12px; margin-top:8px}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="brand">
+        <b>MarcLab • Platformă</b>
+        <span>Mini-jocuri educaționale • progres local • offline • export</span>
+      </div>
+      <div class="pill"><small>URL</small> marclab.netlify.app</div>
+    </header>
+
+    <div class="grid">
+      <!-- Module card: PlusMinus -->
+      <section class="card" id="cardPlusMinus">
+        <div class="titleRow">
+          <div>
+            <h2>PlusMinus</h2>
+            <div class="desc">Adunări & scăderi, numărat, comparat și “până la 10”. Adaptiv + gamificare.</div>
+          </div>
+          <div class="tag">Level 1: 1–10</div>
+        </div>
+
+        <div class="metaRow">
+          <div class="pill"><small>LEVEL</small> <span id="pmLevel">—</span></div>
+          <div class="pill"><small>XP</small> <span id="pmXp">—</span></div>
+          <div class="pill"><small>STREAK</small> <span id="pmStreak">—</span></div>
+          <div class="pill"><small>COINS</small> <span id="pmCoins">—</span></div>
+        </div>
+
+        <div class="desc" id="pmStatus">Progres: (încă nu există) — apasă Start 😊</div>
+
+        <div class="btnRow">
+          <a class="btn primary" href="/plusminus/" aria-label="Start PlusMinus">Start</a>
+          <button class="btn" id="btnPmProgress">Progres</button>
+          <button class="btn" id="btnPmExport">Export</button>
+        </div>
+
+        <div class="hint">Progres/Export sunt protejate cu PIN părinte.</div>
+      </section>
+
+      <!-- Placeholder for future modules -->
+      <section class="card">
+        <div class="titleRow">
+          <div>
+            <h2>Următorul modul</h2>
+            <div class="desc">Spațiu rezervat pentru viitor: Litere, logică, pattern-uri, etc.</div>
+          </div>
+          <div class="tag" style="border-color:rgba(255,255,255,.22);background:rgba(255,255,255,.06)">Soon</div>
+        </div>
+        <div class="desc">Când adăugăm un modul nou, îl legăm aici și îi dăm cheie de storage separată.</div>
+        <div class="btnRow">
+          <button class="btn ghost" disabled>—</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- PIN gate -->
+  <dialog id="pinDlg">
+    <div class="modal">
+      <div class="row">
+        <div>
+          <h3>PIN părinte</h3>
+          <p>Introdu PIN-ul pentru Progres / Export.</p>
+        </div>
+        <button class="btn" id="pinCancel">Închide</button>
+      </div>
+
+      <input
+        id="pinInput"
+        class="pinInput"
+        type="password"
+        inputmode="numeric"
+        pattern="[0-9]*"
+        maxlength="8"
+        placeholder="••••"
+        autocomplete="off"
+      />
+
+      <div id="pinMsg" style="min-height:18px;margin-top:10px;color:var(--bad);font-weight:900"></div>
+
+      <div class="row" style="justify-content:flex-end;margin-top:12px">
+        <button class="btn primary" id="pinOk">OK</button>
+      </div>
+
+      <div class="hint">PIN implicit: 2580 (îl poți schimba din Dashboard-ul modulului).</div>
+    </div>
+  </dialog>
+
+  <!-- Progress modal -->
+  <dialog id="progressDlg">
+    <div class="modal">
+      <div class="row">
+        <div>
+          <h3>Progres • PlusMinus</h3>
+          <p>Rezumat + mastery pe abilități.</p>
+        </div>
+        <button class="btn" id="btnCloseProgress">Închide</button>
+      </div>
+
+      <div class="metaRow" style="margin-top:8px">
+        <div class="pill"><small>LEVEL</small> <span id="dlgLevel">—</span></div>
+        <div class="pill"><small>XP</small> <span id="dlgXp">—</span></div>
+        <div class="pill"><small>STREAK</small> <span id="dlgStreak">—</span></div>
+        <div class="pill"><small>COINS</small> <span id="dlgCoins">—</span></div>
+      </div>
+
+      <div style="margin-top:14px" class="skills" id="dlgSkills"></div>
+
+      <div class="btnRow" style="margin-top:14px">
+        <a class="btn primary" href="/plusminus/">Deschide modulul</a>
+        <button class="btn" id="dlgExport">Export</button>
+      </div>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast">—</div>
+
+<script>
+(() => {
+  // Module config
+  const PLUSMINUS = {
+    name: "PlusMinus",
+    path: "/plusminus/",
+    storageKey: "marclab-plusminus-l1-v1",
+    defaultPin: "2580"
+  };
+
+  const ui = {
+    pmLevel: document.getElementById("pmLevel"),
+    pmXp: document.getElementById("pmXp"),
+    pmStreak: document.getElementById("pmStreak"),
+    pmCoins: document.getElementById("pmCoins"),
+    pmStatus: document.getElementById("pmStatus"),
+
+    btnPmProgress: document.getElementById("btnPmProgress"),
+    btnPmExport: document.getElementById("btnPmExport"),
+
+    pinDlg: document.getElementById("pinDlg"),
+    pinInput: document.getElementById("pinInput"),
+    pinMsg: document.getElementById("pinMsg"),
+    pinOk: document.getElementById("pinOk"),
+    pinCancel: document.getElementById("pinCancel"),
+
+    progressDlg: document.getElementById("progressDlg"),
+    btnCloseProgress: document.getElementById("btnCloseProgress"),
+    dlgLevel: document.getElementById("dlgLevel"),
+    dlgXp: document.getElementById("dlgXp"),
+    dlgStreak: document.getElementById("dlgStreak"),
+    dlgCoins: document.getElementById("dlgCoins"),
+    dlgSkills: document.getElementById("dlgSkills"),
+    dlgExport: document.getElementById("dlgExport"),
+
+    toast: document.getElementById("toast")
+  };
+
+  function toast(msg){
+    ui.toast.textContent = msg;
+    ui.toast.style.display = "block";
+    clearTimeout(toast._tm);
+    toast._tm = setTimeout(()=>ui.toast.style.display="none", 1400);
+  }
+
+  function loadState(){
+    try{
+      const raw = localStorage.getItem(PLUSMINUS.storageKey);
+      if(!raw) return null;
+      const s = JSON.parse(raw);
+      if(!s || !s.economy || !s.skills) return null;
+      return s;
+    }catch(e){
+      return null;
+    }
+  }
+
+  function saveState(state){
+    localStorage.setItem(PLUSMINUS.storageKey, JSON.stringify(state));
+  }
+
+  function exportState(state){
+    const blob = new Blob([JSON.stringify(state, null, 2)], {type:"application/json"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `marclab-plusminus-l1-progress-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast("Export gata ✅");
+  }
+
+  // --- PIN verify (same mechanism as module) ---
+  function genSalt(){
+    const a = new Uint8Array(16);
+    crypto.getRandomValues(a);
+    return Array.from(a).map(b=>b.toString(16).padStart(2,"0")).join("");
+  }
+  async function sha256Hex(str){
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+    return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
+  }
+  async function hashPin(pin, salt){
+    return sha256Hex(`${pin}:${salt}`);
+  }
+  async function ensurePinSetup(state){
+    state.security = state.security || { pinSalt:"", pinHash:"", pinSetAt:null };
+    if(!state.security.pinSalt) state.security.pinSalt = genSalt();
+    if(!state.security.pinHash){
+      state.security.pinHash = await hashPin(PLUSMINUS.defaultPin, state.security.pinSalt);
+      state.security.pinSetAt = Date.now();
+      saveState(state);
+    }
+    return state;
+  }
+  async function verifyPin(state, pin){
+    await ensurePinSetup(state);
+    const h = await hashPin(pin, state.security.pinSalt);
+    return h === state.security.pinHash;
+  }
+
+  // Render summary on card
+  function renderCard(){
+    const s = loadState();
+    if(!s){
+      ui.pmLevel.textContent = "—";
+      ui.pmXp.textContent = "—";
+      ui.pmStreak.textContent = "—";
+      ui.pmCoins.textContent = "—";
+      ui.pmStatus.textContent = "Progres: (încă nu există) — apasă Start 😊";
+      return;
+    }
+    ui.pmLevel.textContent = s.economy?.level ?? "—";
+    ui.pmXp.textContent = s.economy?.xp ?? "—";
+    ui.pmStreak.textContent = s.economy?.streak ?? "—";
+    ui.pmCoins.textContent = s.economy?.coins ?? "—";
+
+    const attempts = Object.values(s.skills||{}).reduce((t,sk)=>t+(sk.attempts||0),0);
+    ui.pmStatus.textContent = attempts
+      ? `Progres: ${attempts} exerciții încercate • Best streak: ${s.economy?.bestStreak ?? 0}`
+      : "Progres: începe cu Start 😊";
+  }
+
+  function renderProgressDialog(s){
+    ui.dlgLevel.textContent = s.economy?.level ?? "—";
+    ui.dlgXp.textContent = s.economy?.xp ?? "—";
+    ui.dlgStreak.textContent = s.economy?.streak ?? "—";
+    ui.dlgCoins.textContent = s.economy?.coins ?? "—";
+
+    ui.dlgSkills.innerHTML = "";
+    for(const sk of Object.values(s.skills||{})){
+      const pct = Math.round((sk.mastery ?? 0)*100);
+      const div = document.createElement("div");
+      div.className = "skill";
+      div.innerHTML = `
+        <b>${sk.name || "Skill"}</b>
+        <small>Nivel: ${sk.level ?? 1} • Mastery: ${pct}% • Corecte: ${(sk.correct||0)}/${(sk.attempts||0)}</small>
+        <div class="meter"><i style="width:${pct}%"></i></div>
+      `;
+      ui.dlgSkills.appendChild(div);
+    }
+  }
+
+  // PIN flow: queue an action after success
+  let afterPinAction = null;
+
+  function openPin(action){
+    afterPinAction = action;
+    ui.pinMsg.textContent = "";
+    ui.pinInput.value = "";
+    ui.pinDlg.showModal();
+    setTimeout(()=>ui.pinInput.focus(), 0);
+  }
+
+  ui.pinCancel.onclick = ()=>ui.pinDlg.close();
+  ui.pinInput.addEventListener("keydown", (e)=>{
+    if(e.key === "Enter") ui.pinOk.click();
+    if(e.key === "Escape") ui.pinCancel.click();
+  });
+
+  ui.pinOk.onclick = async () => {
+    const pin = (ui.pinInput.value || "").trim();
+    if(pin.length < 4){
+      ui.pinMsg.textContent = "PIN prea scurt (minim 4 cifre).";
+      return;
+    }
+    let s = loadState();
+    if(!s){
+      ui.pinMsg.textContent = "Nu există progres încă. Apasă Start mai întâi.";
+      return;
+    }
+    const ok = await verifyPin(s, pin);
+    if(!ok){
+      ui.pinMsg.textContent = "PIN greșit.";
+      ui.pinInput.value = "";
+      ui.pinInput.focus();
+      return;
+    }
+    ui.pinDlg.close();
+    if(typeof afterPinAction === "function") afterPinAction();
+  };
+
+  // Buttons
+  ui.btnPmProgress.onclick = () => openPin(() => {
+    const s = loadState();
+    if(!s) return;
+    renderProgressDialog(s);
+    ui.progressDlg.showModal();
+  });
+
+  ui.btnPmExport.onclick = () => openPin(() => {
+    const s = loadState();
+    if(!s) return;
+    exportState(s);
+  });
+
+  ui.btnCloseProgress.onclick = ()=>ui.progressDlg.close();
+  ui.dlgExport.onclick = () => openPin(() => {
+    const s = loadState();
+    if(!s) return;
+    exportState(s);
+  });
+
+  // Init
+  renderCard();
+  // re-render if user comes back from module
+  window.addEventListener("focus", renderCard);
+})();
+</script>
+</body>
+</html>
